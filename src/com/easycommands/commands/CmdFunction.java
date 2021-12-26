@@ -3,8 +3,8 @@ package com.easycommands.commands;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
-public interface CmdFunction {
+public interface CMDFunction {
 
-	public boolean execute(CommandSender sender, Command cmd, String arg, String[] args);
+	public boolean func(CommandSender sender, Command cmd, String str, String[] args);
 	
 }

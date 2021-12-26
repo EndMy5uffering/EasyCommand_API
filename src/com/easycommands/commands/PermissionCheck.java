@@ -1,9 +1,9 @@
 package com.easycommands.commands;
 
-import org.bukkit.entity.Player;
+import org.bukkit.command.CommandSender;
 
 public interface PermissionCheck {
 
-	public boolean check(Player player);
+	public boolean check(CommandSender sender);
 	
 }
