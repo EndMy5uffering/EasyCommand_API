@@ -15,6 +15,7 @@ public class CMDStruct {
 	private Map<String, CMDStruct> next = new HashMap<>();
 	private CMDTabLookup lookup;
 	private PermissionCheck permissionCheck;
+	private MissingPermissionHandle missingPermissinHandle = null;
 	
 	public CMDStruct(String part) {
 		this(part, null);
@@ -73,9 +74,9 @@ public class CMDStruct {
 				return output;
 			}
 		} catch (EasyCommandError e) {
-			return null;
+			return new ArrayList<>();
 		}
-		return null;
+		return new ArrayList<>();
 	}
 	
 	public boolean addCMD(String[] parts, CMDFunction func) throws EasyCommandError {
@@ -110,20 +111,21 @@ public class CMDStruct {
 		return this.getNext(parts[c]).addCMDLookup(parts, tablookup, ++c);
 	}
 	
-	public boolean addPermissionCheck(String[] parts, PermissionCheck permissionCheck) throws EasyCommandError {
+	public boolean addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle) throws EasyCommandError {
 		if(!parts[0].equalsIgnoreCase(this.part)) throw new EasyCommandError("Root was not the same: " + parts[0] + " != " + this.part);
-		return addPermissionCheck(parts, permissionCheck, 1);
+		return addPermissionCheck(parts, permissionCheck, handle, 1);
 	}
 	
-	private boolean addPermissionCheck(String[] parts, PermissionCheck permissionCheck, int c) {
+	private boolean addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle, int c) {
 		if(c > parts.length - 1) {
 			this.permissionCheck = permissionCheck;
+			this.missingPermissinHandle = handle;
 			return true;
 		}
 		if(!this.hasNext(parts[c])) {
 			this.next.put(parts[c], new CMDStruct(parts[c], null));
 		}
-		return this.getNext(parts[c]).addPermissionCheck(parts, permissionCheck, ++c);
+		return this.getNext(parts[c]).addPermissionCheck(parts, permissionCheck, handle, ++c);
 	}
 	
 	public String getPart() {
@@ -156,6 +158,14 @@ public class CMDStruct {
 
 	public void setPermissionCheck(PermissionCheck permissionCheck) {
 		this.permissionCheck = permissionCheck;
+	}
+
+	public MissingPermissionHandle getMissingPermissinHandle() {
+		return missingPermissinHandle;
+	}
+
+	public void setMissingPermissinHandle(MissingPermissionHandle missingPermissinHandle) {
+		this.missingPermissinHandle = missingPermissinHandle;
 	}
 
 		
