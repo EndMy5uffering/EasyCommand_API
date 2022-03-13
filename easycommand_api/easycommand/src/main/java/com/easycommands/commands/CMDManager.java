@@ -4,28 +4,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 
 public class CMDManager implements TabExecutor{
 	
 	private Map<String, CMDStruct> rootsToCMDS = new HashMap<>();
 	
-	private Plugin plugin;
 	private String firstLabel = "[/]*[a-zA-Z0-9]*";
 	private MissingPermissionHandle missingPermsHandle = (err) -> { 
 		err.getPlayer().sendMessage(err.getMessage());
 		return err;
 	};
 	
-	public CMDManager(Plugin plugin) {
-		this.plugin = plugin;
+	public CMDManager() {
 	}
 	
 	private String[] preParse(String cmd) {
