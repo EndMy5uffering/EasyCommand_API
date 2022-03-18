@@ -7,68 +7,67 @@ import java.util.regex.Pattern;
 
 public class CMDStruct {
 
-	private final String wildCardPattern = "[<][a-zA-Z0-9]*[>]";
+	private final String wildCardPattern = "<([a-zA-Z0-9]+|\\.\\.\\.)>";
+	private final String varargPattern = "<(\\.\\.\\.)>";
 	
 	private final String part;
-	private final boolean isWildCard;
+	private final boolean isWildCard, isVarArg;
 	private CMDFunction func;
 	private Map<String, CMDStruct> next = new HashMap<>();
 	private CMDTabLookup lookup;
 	private PermissionCheck permissionCheck;
 	private MissingPermissionHandle missingPermissinHandle = null;
-	
+	private CMDStruct nextWildCard = null;
+		
 	public CMDStruct(String part) {
 		this(part, null);
 	}
 	
 	public CMDStruct(String part, CMDFunction func) {
 		this.isWildCard = Pattern.matches(wildCardPattern, part);
+		this.isVarArg = Pattern.matches(varargPattern, part);
 		this.part = part;
 		this.func = func;
 	}
 	
-	public CMDStruct search(String[] cmd) throws EasyCommandError {
-		return this.search(cmd, 0);
+	public CMDPair<CMDStruct, Map<String, String>> search(String[] cmd) throws EasyCommandError {
+		return this.search(cmd, new HashMap<>(), 0);
 	}
 	
-	private CMDStruct search(String[] parts, int c) throws EasyCommandError {
+	private CMDPair<CMDStruct, Map<String, String>> search(String[] parts, Map<String,String> wildCards, int c) throws EasyCommandError {
+		if(this.isVarArg){
+			return new CMDPair<CMDStruct,Map<String,String>>(this, wildCards);
+		}
+		
 		if(!this.isWildCard && !parts[c].equalsIgnoreCase(this.part)) 
 			throw new EasyCommandError("Pattern mismatch!\nExpected: " + this.part + " got " + parts[c]);
-	
+
+		if(this.isWildCard)
+			wildCards.put(this.part.replace("<", "").replace(">", ""), parts[c]);
+		
 		if(c < parts.length-1) {
 			if(hasNext(parts[c+1])) {
-				return getNext(parts[c+1]).search(parts, ++c);
-			}else {
-				int wcount = 0;
-				CMDStruct wcardNext = null;
-				for(CMDStruct next : this.next.values()) {
-					if(next.isWildCard) {
-						++wcount;
-						wcardNext = next;	
-					}
-				}
-				if(wcount > 1)
-					throw new EasyCommandError("Could not distinguish between arguments. Too many wild cards:" + this.next.keySet().stream().reduce("", (x, y) -> x + ", " + y));
-				return wcardNext != null ? wcardNext.search(parts, ++c) : null;
+				return getNext(parts[c+1]).search(parts, wildCards, ++c);
+			}else if(!hasNext(parts[c+1]) && this.nextWildCard != null){
+				return this.nextWildCard.search(parts, wildCards, ++c);
+			}else{
+				throw new EasyCommandError("Pattern mismatch! No sub function found for: "+ parts[c+1]);
 			}
 		}
-		return this;
+		return new CMDPair<CMDStruct,Map<String,String>>(this, wildCards);
 	}
 	
 	public ArrayList<String> getTabList(String[] parts){
 		try {
-			CMDStruct struct = search(parts);
+			CMDStruct struct = search(parts).getFirst();
 			if(struct != null) {
 				ArrayList<String> output = new ArrayList<>();
 				for(CMDStruct element : struct.next.values()) {
-					if(element.isWildCard) {
-						if(element.lookup != null) {
-							for(String item : element.lookup.get()) {
-								output.add(item);
-							}
-						}
-					}else {						
-						output.add(element.part);
+					output.add(element.part);
+				}
+				if(this.nextWildCard != null && this.nextWildCard.lookup != null) {
+					for(String item : this.nextWildCard.lookup.get()) {
+						output.add(item);
 					}
 				}
 				return output;
@@ -79,53 +78,44 @@ public class CMDStruct {
 		return new ArrayList<>();
 	}
 	
-	public boolean addCMD(String[] parts, CMDFunction func) throws EasyCommandError {
+	public CMDStruct getPath(String[] parts) throws EasyCommandError{
 		if(!parts[0].equalsIgnoreCase(this.part)) throw new EasyCommandError("Root was not the same: " + parts[0] + " != " + this.part);
-		return addCMD(parts, func, 1);
+		return getPath(parts, 1);
 	}
-	
-	private boolean addCMD(String[] parts, CMDFunction func, int c) {
+
+	public CMDStruct getPath(String[] parts, int c) throws EasyCommandError{
+		if(this.isVarArg && c <= parts.length -1){
+			throw new EasyCommandError("Can not add function to var arg command!");
+		}
 		if(c > parts.length - 1) {
-			this.func = func;
-			return true;
+			return this;
+		}
+
+		boolean isNextWildCard = Pattern.matches(wildCardPattern, parts[c]);
+		if(isNextWildCard && this.nextWildCard != null && !this.nextWildCard.part.equals(parts[c])){
+			throw new EasyCommandError("Can not add more then one wildcard in one branch!");
+		}else if(isNextWildCard && this.nextWildCard != null && this.nextWildCard.part.equals(parts[c])){
+			return this.nextWildCard.getPath(parts, ++c);
+		}else if(isNextWildCard && this.nextWildCard == null){
+			this.nextWildCard = new CMDStruct(parts[c], null);
+			return this.nextWildCard.getPath(parts, ++c);
 		}
 		if(!this.hasNext(parts[c])) {
 			this.next.put(parts[c], new CMDStruct(parts[c], null));
 		}
-		return this.getNext(parts[c]).addCMD(parts, func, ++c);
+		return this.getNext(parts[c]).getPath(parts, ++c);
+	}
+
+	public void addCMD(String[] parts, CMDFunction func) throws EasyCommandError {
+		getPath(parts).setFunc(func);
 	}
 	
-	public boolean addCMDLookup(String[] parts, CMDTabLookup tablookup) throws EasyCommandError {
-		if(!parts[0].equalsIgnoreCase(this.part)) throw new EasyCommandError("Root was not the same: " + parts[0] + " != " + this.part);
-		return addCMDLookup(parts, tablookup, 1);
+	public void addCMDLookup(String[] parts, CMDTabLookup tablookup) throws EasyCommandError {
+		getPath(parts).setLookup(tablookup);
 	}
 	
-	private boolean addCMDLookup(String[] parts, CMDTabLookup tablookup, int c) {
-		if(c > parts.length - 1) {
-			this.lookup = tablookup;
-			return true;
-		}
-		if(!this.hasNext(parts[c])) {
-			this.next.put(parts[c], new CMDStruct(parts[c], null));
-		}
-		return this.getNext(parts[c]).addCMDLookup(parts, tablookup, ++c);
-	}
-	
-	public boolean addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle) throws EasyCommandError {
-		if(!parts[0].equalsIgnoreCase(this.part)) throw new EasyCommandError("Root was not the same: " + parts[0] + " != " + this.part);
-		return addPermissionCheck(parts, permissionCheck, handle, 1);
-	}
-	
-	private boolean addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle, int c) {
-		if(c > parts.length - 1) {
-			this.permissionCheck = permissionCheck;
-			this.missingPermissinHandle = handle;
-			return true;
-		}
-		if(!this.hasNext(parts[c])) {
-			this.next.put(parts[c], new CMDStruct(parts[c], null));
-		}
-		return this.getNext(parts[c]).addPermissionCheck(parts, permissionCheck, handle, ++c);
+	public void addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle) throws EasyCommandError {
+		getPath(parts).setPermissionCheck(permissionCheck);
 	}
 	
 	public String getPart() {
@@ -168,5 +158,20 @@ public class CMDStruct {
 		this.missingPermissinHandle = missingPermissinHandle;
 	}
 
-		
+	public CMDStruct getNextWildCard() {
+		return nextWildCard;
+	}
+
+	public void setNextWildCard(CMDStruct nextWildCard) {
+		this.nextWildCard = nextWildCard;
+	}
+
+	private void setFunc(CMDFunction func) {
+		this.func = func;
+	}
+
+	private void setLookup(CMDTabLookup lookup) {
+		this.lookup = lookup;
+	}
+
 }

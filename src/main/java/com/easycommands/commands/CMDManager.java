@@ -39,7 +39,7 @@ public class CMDManager implements TabExecutor{
 		return "/" + label;
 	}
 	
-	public void register(String cmd, CMDFunction func) {
+	public boolean register(String cmd, CMDFunction func) {
 		String[] parts = preParse(cmd);
 		if(!rootsToCMDS.containsKey(parts[0])) {
 			rootsToCMDS.put(parts[0], new CMDStruct(parts[0], null));
@@ -48,7 +48,9 @@ public class CMDManager implements TabExecutor{
 			rootsToCMDS.get(parts[0]).addCMD(parts, func);
 		} catch (EasyCommandError e) {
 			e.printStackTrace();
+			return false;
 		}
+		return true;
 	}
 	
 	public void addLookup(String cmd, CMDTabLookup lookup) {
@@ -87,12 +89,15 @@ public class CMDManager implements TabExecutor{
 	    
 	    if(rootsToCMDS.containsKey(label)) {
 	    	try {
-				CMDStruct struct = rootsToCMDS.get(label).search(tempArr);
+				CMDPair<CMDStruct, Map<String, String>> pair = rootsToCMDS.get(label).search(tempArr);
+
+				CMDStruct struct = pair.getFirst();
+				Map<String, String> wildCards = pair.getSecound();
 				
 				if(struct != null && struct.getFunc() != null) {
 					if(sender instanceof Player && struct.hasPermissionCheck() && !struct.getPermissionCheck().check((Player)sender))
 						throw new MissingPermissions((Player)sender, struct.getMissingPermissinHandle(), "Missing Permissions", label, args);
-					return struct.getFunc().func(sender, cmd, label, args);
+					return struct.getFunc().func(sender, cmd, label, args, wildCards);
 				}
 				return false;
 			} catch (EasyCommandError e) {
@@ -114,7 +119,7 @@ public class CMDManager implements TabExecutor{
 			return null;
 		}
 	}
-	
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		try {
