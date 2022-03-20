@@ -96,7 +96,10 @@ public class CMDManager implements TabExecutor{
 	    if(rootsToCMDS.containsKey(label) || aliasesToRoots.containsKey(label)) {
 	    	try {
 				CMDStruct root = rootsToCMDS.get(label);
-				if(root == null) root = rootsToCMDS.get(aliasesToRoots.get(label));
+				if(root == null) {
+					root = rootsToCMDS.get(aliasesToRoots.get(label));
+					tempArr[0] = aliasesToRoots.get(label);
+				}
 				if(root == null) return false;
 				CMDPair<CMDStruct, Map<String, String>> pair = root.search(tempArr);
 
