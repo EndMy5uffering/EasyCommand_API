@@ -171,7 +171,9 @@ public class CMDStruct {
 	}
 	
 	public void addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle) throws EasyCommandError {
-		createPathSingle(parts).setPermissionCheck(permissionCheck);
+		CMDStruct cstruct = createPathSingle(parts);
+		cstruct.setPermissionCheck(permissionCheck);
+		cstruct.setMissingPermissinHandle(handle);
 	}
 
 	public CMDStruct checkPermission(String[] parts, Player p) throws EasyCommandError{
