@@ -87,7 +87,7 @@ public class CMDManager implements TabExecutor{
 		this.missingPermsHandle = mph;
 	}
 	
-	public boolean call(CommandSender sender, Command cmd, String label, String[] args) throws MissingPermissions {
+	public boolean call(CommandSender sender, Command cmd, String label, String[] args) throws MissingPermissions, EasyCommandError {
 		label = preParseLabel(label);
 		String[] tempArr = new String[args.length + 1];
 	    tempArr[0] = label;
@@ -105,13 +105,9 @@ public class CMDManager implements TabExecutor{
 				
 				if(struct != null && struct.getFunc() != null) {
 					if(sender instanceof Player){
-						try {
-							CMDStruct faildStruct = root.checkPermission(tempArr, (Player)sender);
-							if(faildStruct != null)
-								throw new MissingPermissions((Player)sender, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
-						} catch (Exception e) {
-							sender.sendMessage(e.getMessage());
-						}
+						CMDStruct faildStruct = root.checkPermission(tempArr, (Player)sender);
+						if(faildStruct != null)
+							throw new MissingPermissions((Player)sender, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
 					}
 					return struct.getFunc().func(sender, cmd, label, args, wildCards);
 				}
@@ -149,8 +145,11 @@ public class CMDManager implements TabExecutor{
 				err = this.missingPermsHandle.handleMissingPermission(e);
 			}
 			if(err != null) return err.returnStatus();
-			return false;
-		}
+			return true;
+		} catch (EasyCommandError e) {
+			sender.sendMessage(e.getMessage());
+			return true;
+		} 
 	}
 	
 	@Override

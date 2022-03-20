@@ -21,7 +21,7 @@ import org.junit.Test;
 public class TestFile {
 
     @Test
-    public void TestRegister(){
+    public void TestRegister() throws EasyCommandError{
         CMDManager m = new CMDManager();
         m.register("command sub1 sub11 sub111", (sender, cmd, str, args, wildcards) -> {
             System.out.println("[DEFAULT TEST] command sub1 sub11 sub111");
@@ -49,7 +49,7 @@ public class TestFile {
     }
 
     @Test
-    public void TestRegisterVarArgs(){
+    public void TestRegisterVarArgs() throws EasyCommandError{
         CMDManager m = new CMDManager();
         m.register("command <...>", (sender, cmd, str, args, wildcards) -> {
             String astring = "";
@@ -71,7 +71,7 @@ public class TestFile {
     }
 
     @Test
-    public void TestRegisterVarArgsEdgeCases(){
+    public void TestRegisterVarArgsEdgeCases() throws EasyCommandError{
         CMDManager m = new CMDManager();
         assert(m.register("command sub1 <...>", (sender, cmd, str, args, wildcards) -> {
             String astring = "";
@@ -105,7 +105,7 @@ public class TestFile {
     }
 
     @Test
-    public void TestWildCards() {
+    public void TestWildCards() throws EasyCommandError {
         CMDManager m = new CMDManager();
         assertTrue(m.register("command <CARD1> <CARD2> <CARD3>", (sender, cmd, str, args, wildcards) -> {
             assertEquals("arg1", wildcards.get("CARD1"));
@@ -138,17 +138,6 @@ public class TestFile {
         CMDManager m = new CMDManager();
 
         m.register("tg <arg1>", (sender, cmd, str, args, wildcards) -> {
-            assertEquals(wildcards.get("arg1"), "test");
-            return true;
-        });
-
-        assertTrue(m.onCommand(new TestPlayer(), null, "tg", new String[]{"test"}));
-    }
-
-    public static void main(String... args){
-        CMDManager m = new CMDManager();
-
-        m.register("tg <arg1>", (sender, cmd, str, _args, wildcards) -> {
             assertEquals(wildcards.get("arg1"), "test");
             return true;
         });
@@ -195,7 +184,7 @@ public class TestFile {
     }
 
     @Test
-    public void TestAliases() throws MissingPermissions{
+    public void TestAliases() throws MissingPermissions, EasyCommandError{
         CMDManager m = new CMDManager();
 
         m.register("cmd arg1 arg11 arg3", (a,b,c,d,e) -> { return true;});
