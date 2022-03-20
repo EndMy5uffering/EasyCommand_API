@@ -3,10 +3,17 @@ package com.easycommands;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import com.easycommands.commands.CMDManager;
+import com.easycommands.commands.CMDStruct;
+import com.easycommands.commands.EasyCommandError;
 import com.easycommands.commands.MissingPermissions;
 
 import org.junit.Test;
@@ -27,10 +34,15 @@ public class TestFile {
         });
 
         try {
-            assert(!m.call(null, null, "command", new String[0]));
-            assert(m.call(null, null, "command", new String[]{"sub1", "sub11", "sub111"}));
-            assert(m.call(null, null, "command", new String[]{"sub1", "tmp1", "sub111"}));
-            assert(!m.call(null, null, "command", new String[]{"sub1", "tmp2", "sub11"}));
+            assert(!m.call(new TestPlayer(), null, "command", new String[0]));
+            assert(m.call(new TestPlayer(), null, "command", new String[]{"sub1", "sub11", "sub111"}));
+            assert(m.call(new TestPlayer(), null, "command", new String[]{"sub1", "tmp1", "sub111"}));
+            
+            try {
+                m.call(new TestPlayer(), null, "command", new String[]{"sub1", "tmp2", "sub11"});
+            } catch (Exception e) {
+                assertTrue(e instanceof EasyCommandError);
+            }
         } catch (MissingPermissions e) {
             e.printStackTrace();
         }
@@ -49,10 +61,10 @@ public class TestFile {
         });
 
         try {
-            assert(!m.call(null, null, "command", new String[0]));
-            assert(m.call(null, null, "command", new String[]{"sub1", "sub11", "sub111"}));
-            assert(m.call(null, null, "command", new String[]{"sub1", "tmp", "sub111"}));
-            assert(m.call(null, null, "command", new String[]{"sub1", "tmp", "sub11"}));
+            assert(!m.call(new TestPlayer(), null, "command", new String[0]));
+            assert(m.call(new TestPlayer(), null, "command", new String[]{"sub1", "sub11", "sub111"}));
+            assert(m.call(new TestPlayer(), null, "command", new String[]{"sub1", "tmp", "sub111"}));
+            assert(m.call(new TestPlayer(), null, "command", new String[]{"sub1", "tmp", "sub11"}));
         } catch (MissingPermissions e) {
             e.printStackTrace();
         }
@@ -83,39 +95,39 @@ public class TestFile {
         System.out.println("[EDGE TEST] registered third command");
 
         try {
-            assert(m.call(null, null, "command", new String[]{"sub1", "sub11", "sub11"}));
-            assert(m.call(null, null, "command", new String[]{"sub1", "tmp", "sub111"}));
-            assert(m.call(null, null, "command", new String[]{"sub1", "tmp", "sub11"}));
-            assert(m.call(null, null, "command", new String[]{"sub2", "sub21", "sub211"}));
+            assert(m.call(new TestPlayer(), null, "command", new String[]{"sub1", "sub11", "sub11"}));
+            assert(m.call(new TestPlayer(), null, "command", new String[]{"sub1", "tmp", "sub111"}));
+            assert(m.call(new TestPlayer(), null, "command", new String[]{"sub1", "tmp", "sub11"}));
+            assert(m.call(new TestPlayer(), null, "command", new String[]{"sub2", "sub21", "sub211"}));
         } catch (MissingPermissions e) {
             e.printStackTrace();
         }
     }
 
     @Test
-    public void TestWildCards(){
+    public void TestWildCards() {
         CMDManager m = new CMDManager();
-        assert(m.register("command <CARD1> <CARD2> <CARD3>", (sender, cmd, str, args, wildcards) -> {
+        assertTrue(m.register("command <CARD1> <CARD2> <CARD3>", (sender, cmd, str, args, wildcards) -> {
             assertEquals("arg1", wildcards.get("CARD1"));
             assertEquals("arg2", wildcards.get("CARD2"));
             assertEquals("arg3", wildcards.get("CARD3"));
             return true;
         }));
 
-        assert(m.register("command <CARD1>", (sender, cmd, str, args, wildcards) -> {
+        assertTrue(m.register("command <CARD1>", (sender, cmd, str, args, wildcards) -> {
             assertEquals("arg1", wildcards.get("CARD1"));
             return true;
         }));
 
-        assert(!m.register("command <CARD2>", (sender, cmd, str, args, wildcards) -> {
+        assertTrue(!m.register("command <CARD2>", (sender, cmd, str, args, wildcards) -> {
             assertEquals("arg1", wildcards.get("CARD1"));
             return true;
         }));
 
         try {
-            assert(m.call(null, null, "command", new String[]{"arg1", "arg2", "arg3"}));
-            assert(m.call(null, null, "command", new String[]{"arg1"}));
-            assert(!m.call(null, null, "command", new String[]{"arg1", "arg2"}));
+            assertTrue(m.call(new TestPlayer(), null, "command", new String[]{"arg1", "arg2", "arg3"}));
+            assertTrue(m.call(new TestPlayer(), null, "command", new String[]{"arg1"}));
+            assertTrue(!m.call(new TestPlayer(), null, "command", new String[]{"arg1", "arg2"}));
         } catch (MissingPermissions e) {
             e.printStackTrace();
         }
@@ -130,12 +142,42 @@ public class TestFile {
         m.register("cmd arg3 arg31", null);
         m.register("cmd <A> arg31", null);
 
-        m.addLookup("cmd <A>", () -> {
+        m.addTabLookup("cmd <A>", () -> {
             return new ArrayList<String>(Arrays.asList("VARG"));
         });
         ArrayList<String> shouldbe = new ArrayList<String>(Arrays.asList("arg1", "arg2", "arg3", "VARG"));
-        ArrayList<String> got = m.tabComplete(null, null, "cmd", new String[]{""});
+        ArrayList<String> got = m.tabComplete(new TestPlayer(), null, "cmd", new String[]{""});
         assertTrue(shouldbe.size() == got.size() && shouldbe.containsAll(got) && got.containsAll(shouldbe));
 
+    }
+
+    private List<CMDStruct> getCMDStructs(String path, CMDManager m) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException, InvocationTargetException, EasyCommandError{
+        Method preParse = m.getClass().getDeclaredMethod("preParse", String.class);
+        preParse.setAccessible(true);
+        String[] parts = (String[]) preParse.invoke(m, path);
+
+        Field f = m.getClass().getDeclaredField("rootsToCMDS");
+        f.setAccessible(true);
+
+        Object pathlist = f.get(m);
+        Map<String, CMDStruct> paths = (Map<String, CMDStruct>)pathlist;
+
+        return paths.get(parts[0]).getPath(parts);
+    }
+
+    private Object getField(Object instance, String fname) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException{
+        Field P0FAliases = instance.getClass().getDeclaredField("aliases");
+        P0FAliases.setAccessible(true);
+        return P0FAliases.get(instance);
+    }
+
+    @Test
+    public void TestAliases() throws MissingPermissions{
+        CMDManager m = new CMDManager();
+
+        m.register("cmd arg1 arg11 arg3", (a,b,c,d,e) -> { return true;});
+        m.registerAliase("cmd", "c");
+
+        assertTrue(m.call(new TestPlayer(), null, "c", new String[]{"arg1", "arg11", "arg3"}));
     }
 }

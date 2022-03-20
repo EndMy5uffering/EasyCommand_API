@@ -11,9 +11,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 
+import net.md_5.bungee.api.ChatColor;
+
 public class CMDManager implements TabExecutor{
 	
 	private Map<String, CMDStruct> rootsToCMDS = new HashMap<>();
+	private Map<String, String> aliasesToRoots = new HashMap<>();
 	
 	private String firstLabel = "[/]*[a-zA-Z0-9]*";
 	private MissingPermissionHandle missingPermsHandle = (err) -> { 
@@ -26,17 +29,12 @@ public class CMDManager implements TabExecutor{
 	
 	private String[] preParse(String cmd) {
 		String[] parts = cmd.split(" ");
-		if(!Pattern.matches(firstLabel, parts[0])) {
-			parts[0] = "/" + parts[0];
-		}
+		parts[0] = preParseLabel(parts[0]);
 		return parts;
 	}
 	
 	private String preParseLabel(String label) {
-		if(Pattern.matches(firstLabel, label)) {
-			return label;
-		}
-		return "/" + label;
+		return Pattern.matches(firstLabel, label) ? label : "/" + label;
 	}
 	
 	public boolean register(String cmd, CMDFunction func) {
@@ -52,8 +50,12 @@ public class CMDManager implements TabExecutor{
 		}
 		return true;
 	}
+
+	public void registerAliase(String cmdRoot, String aliases){
+		this.aliasesToRoots.put(preParseLabel(aliases), preParseLabel(cmdRoot));
+	}
 	
-	public void addLookup(String cmd, CMDTabLookup lookup) {
+	public void addTabLookup(String cmd, CMDTabLookup lookup) {
 		String[] parts = preParse(cmd);
 		if(!rootsToCMDS.containsKey(parts[0])) {
 			rootsToCMDS.put(parts[0], new CMDStruct(parts[0], null));
@@ -80,6 +82,10 @@ public class CMDManager implements TabExecutor{
 			e.printStackTrace();
 		}
 	}
+
+	public void setMissingPermissionHandle(MissingPermissionHandle mph){
+		this.missingPermsHandle = mph;
+	}
 	
 	public boolean call(CommandSender sender, Command cmd, String label, String[] args) throws MissingPermissions {
 		label = preParseLabel(label);
@@ -87,22 +93,29 @@ public class CMDManager implements TabExecutor{
 	    tempArr[0] = label;
 	    System.arraycopy(args, 0, tempArr, 1, args.length);
 	    
-	    if(rootsToCMDS.containsKey(label)) {
+	    if(rootsToCMDS.containsKey(label) || aliasesToRoots.containsKey(label)) {
 	    	try {
-				CMDPair<CMDStruct, Map<String, String>> pair = rootsToCMDS.get(label).search(tempArr);
+				CMDStruct root = rootsToCMDS.get(label);
+				if(root == null) root = rootsToCMDS.get(aliasesToRoots.get(label));
+				if(root == null) return false;
+				CMDPair<CMDStruct, Map<String, String>> pair = root.search(tempArr);
 
 				CMDStruct struct = pair.getFirst();
 				Map<String, String> wildCards = pair.getSecound();
 				
 				if(struct != null && struct.getFunc() != null) {
-					if(sender instanceof Player && struct.hasPermissionCheck() && !struct.getPermissionCheck().check((Player)sender))
-						throw new MissingPermissions((Player)sender, struct.getMissingPermissinHandle(), "Missing Permissions", label, args);
+					if(sender instanceof Player){
+						CMDStruct faildStruct = root.checkPermission(tempArr, (Player)sender);
+						if(faildStruct != null)
+							throw new MissingPermissions((Player)sender, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
+					}
 					return struct.getFunc().func(sender, cmd, label, args, wildCards);
 				}
 				return false;
 			} catch (EasyCommandError e) {
+				sender.sendMessage(ChatColor.RED + "An error occured please check the error message for details.");
 				e.printStackTrace();
-				return false;
+				return true;
 			}
 	    }
 	    return false;
@@ -131,9 +144,7 @@ public class CMDManager implements TabExecutor{
 			}else if(this.missingPermsHandle != null) {
 				err = this.missingPermsHandle.handleMissingPermission(e);
 			}
-			if(err != null) {
-				return err.returnStatus();
-			}
+			if(err != null) return err.returnStatus();
 			return false;
 		}
 	}
