@@ -151,15 +151,14 @@ public class CMDStruct {
 			return list;
 		}
 
-		boolean isNextWildCard = Pattern.matches(wildCardPattern, parts[c]);
-		if(isNextWildCard && this.nextWildCard != null){
-			return this.nextWildCard.getPath(parts, ++c, list);
-		}else if(isNextWildCard && this.nextWildCard == null){
+		if(!this.hasNext(parts[c]) && this.nextWildCard == null)
 			throw new EasyCommandError("Pattern mismatch! No sub function found for: "+ parts[c]);
-		}
+		else if(!this.hasNext(parts[c]) && this.nextWildCard != null)
+			return this.nextWildCard.getPath(parts, ++c, list);
 		if(!this.hasNext(parts[c]))
 			throw new EasyCommandError("Pattern mismatch! No sub function found for: "+ parts[c]);
-		return this.getNext(parts[c]).getPath(parts, ++c, list);
+		else
+			return this.getNext(parts[c]).getPath(parts, ++c, list);
 	}
  
 

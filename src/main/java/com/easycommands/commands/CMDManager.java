@@ -105,9 +105,13 @@ public class CMDManager implements TabExecutor{
 				
 				if(struct != null && struct.getFunc() != null) {
 					if(sender instanceof Player){
-						CMDStruct faildStruct = root.checkPermission(tempArr, (Player)sender);
-						if(faildStruct != null)
-							throw new MissingPermissions((Player)sender, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
+						try {
+							CMDStruct faildStruct = root.checkPermission(tempArr, (Player)sender);
+							if(faildStruct != null)
+								throw new MissingPermissions((Player)sender, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
+						} catch (Exception e) {
+							sender.sendMessage(e.getMessage());
+						}
 					}
 					return struct.getFunc().func(sender, cmd, label, args, wildCards);
 				}

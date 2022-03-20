@@ -134,6 +134,29 @@ public class TestFile {
     }
 
     @Test
+    public void TestWildCards2() {
+        CMDManager m = new CMDManager();
+
+        m.register("tg <arg1>", (sender, cmd, str, args, wildcards) -> {
+            assertEquals(wildcards.get("arg1"), "test");
+            return true;
+        });
+
+        assertTrue(m.onCommand(new TestPlayer(), null, "tg", new String[]{"test"}));
+    }
+
+    public static void main(String... args){
+        CMDManager m = new CMDManager();
+
+        m.register("tg <arg1>", (sender, cmd, str, _args, wildcards) -> {
+            assertEquals(wildcards.get("arg1"), "test");
+            return true;
+        });
+
+        assertTrue(m.onCommand(new TestPlayer(), null, "tg", new String[]{"test"}));
+    }
+
+    @Test
     public void TestLookups(){
         CMDManager m = new CMDManager();
 
