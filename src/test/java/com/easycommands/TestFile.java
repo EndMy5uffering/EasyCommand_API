@@ -154,8 +154,8 @@ public class TestFile {
         m.register("cmd arg3 arg31", null);
         m.register("cmd <A> arg31", null);
 
-        m.addTabLookup("cmd <A>", () -> {
-            return new ArrayList<String>(Arrays.asList("VARG"));
+        m.addTabLookup("cmd <A>", (a,b,c,d,e) -> {
+            return Arrays.asList("VARG");
         });
         ArrayList<String> shouldbe = new ArrayList<String>(Arrays.asList("arg1", "arg2", "arg3", "VARG"));
         ArrayList<String> got = m.tabComplete(new TestPlayer(), null, "cmd", new String[]{""});

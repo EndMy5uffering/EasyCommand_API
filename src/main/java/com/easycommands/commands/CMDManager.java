@@ -130,7 +130,7 @@ public class CMDManager implements TabExecutor{
 	    tempArr[0] = label;
 	    System.arraycopy(args, 0, tempArr, 1, args.length-1);
 		if(rootsToCMDS.containsKey(label)) {
-			return rootsToCMDS.get(label).getTabList(tempArr);
+			return rootsToCMDS.get(label).getTabList(tempArr, sender, cmd, label, args);
 		}else {
 			return null;
 		}

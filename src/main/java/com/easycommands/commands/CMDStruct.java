@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class CMDStruct {
@@ -60,16 +62,18 @@ public class CMDStruct {
 		return new CMDPair<CMDStruct,Map<String,String>>(this, wildCards);
 	}
 	
-	public ArrayList<String> getTabList(String[] parts){
+	public ArrayList<String> getTabList(String[] parts, CommandSender sender, Command cmd, String str, String[] args){
 		try {
-			CMDStruct struct = search(parts).getFirst();
+			CMDPair<CMDStruct, Map<String, String>> res = search(parts);
+			CMDStruct struct = res.getFirst();
+			Map<String, String> wildCards = res.getSecound();
 			if(struct != null) {
 				ArrayList<String> output = new ArrayList<>();
 				for(CMDStruct element : struct.next.values()) {
 					output.add(element.part);
 				}
 				if(this.nextWildCard != null && this.nextWildCard.lookup != null) {
-					for(String item : this.nextWildCard.lookup.get()) {
+					for(String item : this.nextWildCard.lookup.get(sender, cmd, str, args, wildCards)) {
 						output.add(item);
 					}
 				}
