@@ -4,32 +4,45 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import net.md_5.bungee.api.ChatColor;
 
 public class CMDManager implements TabExecutor{
 	
+	private Plugin plugin = null;
+
 	private Map<String, CMDStruct> rootsToCMDS = new HashMap<>();
 	private Map<String, String> aliasesToRoots = new HashMap<>();
 	
 	private String firstLabel = "[/]*[a-zA-Z0-9]*";
 	private MissingPermissionHandle missingPermsHandle = (err) -> { 
 		err.getPlayer().sendMessage(err.getMessage());
-		return err;
 	};
 	
-	public CMDManager() {
+	public CMDManager(Plugin p) {
+		this.plugin = p;
 	}
+
+	public CMDManager(){}
 	
 	private String[] preParse(String cmd) {
 		String[] parts = cmd.split(" ");
 		parts[0] = preParseLabel(parts[0]);
+		if(!rootsToCMDS.containsKey(parts[0])) {
+			rootsToCMDS.put(parts[0], new CMDStruct(parts[0], null));
+		}
+		if(this.plugin != null && !this.rootsToCMDS.containsKey(parts[0])){
+			((JavaPlugin)plugin).getCommand(parts[0].substring(1)).setExecutor(this);
+		}
 		return parts;
 	}
 	
@@ -39,13 +52,10 @@ public class CMDManager implements TabExecutor{
 	
 	public boolean register(String cmd, CMDFunction func) {
 		String[] parts = preParse(cmd);
-		if(!rootsToCMDS.containsKey(parts[0])) {
-			rootsToCMDS.put(parts[0], new CMDStruct(parts[0], null));
-		}
 		try {
 			rootsToCMDS.get(parts[0]).addCMD(parts, func);
 		} catch (EasyCommandError e) {
-			e.printStackTrace();
+			if(this.plugin != null) plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
 			return false;
 		}
 		return true;
@@ -55,52 +65,50 @@ public class CMDManager implements TabExecutor{
 		this.aliasesToRoots.put(preParseLabel(aliases), preParseLabel(cmdRoot));
 	}
 	
-	public void addTabLookup(String cmd, CMDTabLookup lookup) {
+	public boolean registerTabLookup(String cmd, CMDTabLookup lookup) {
 		String[] parts = preParse(cmd);
-		if(!rootsToCMDS.containsKey(parts[0])) {
-			rootsToCMDS.put(parts[0], new CMDStruct(parts[0], null));
-		}
 		try {
 			rootsToCMDS.get(parts[0]).addCMDLookup(parts, lookup);
+			return true;
 		} catch (EasyCommandError e) {
-			e.printStackTrace();
+			if(this.plugin != null) plugin.getLogger().log(Level.WARNING, e.getMessage());
 		}
+		return false;
 	}
 	
-	public void addPermissionCheck(String cmd, PermissionCheck check) {
-		addPermissionCheck(cmd, check, null);
+	public boolean registerPermissionCheck(String cmd, PermissionCheck check) {
+		return registerPermissionCheck(cmd, check, null);
 	}
 	
-	public void addPermissionCheck(String cmd, PermissionCheck check, MissingPermissionHandle handle) {
+	public boolean registerPermissionCheck(String cmd, PermissionCheck check, MissingPermissionHandle handle) {
 		String[] parts = preParse(cmd);
-		if(!rootsToCMDS.containsKey(parts[0])) {
-			rootsToCMDS.put(parts[0], new CMDStruct(parts[0], null));
-		}
 		try {
 			rootsToCMDS.get(parts[0]).addPermissionCheck(parts, check, handle);
+			return true;
 		} catch (EasyCommandError e) {
-			e.printStackTrace();
+			if(this.plugin != null) plugin.getLogger().log(Level.WARNING, e.getMessage());
 		}
+		return false;
 	}
 
 	public void setMissingPermissionHandle(MissingPermissionHandle mph){
 		this.missingPermsHandle = mph;
 	}
 	
-	public boolean call(CommandSender sender, Command cmd, String label, String[] args) throws MissingPermissions, EasyCommandError {
+	private boolean call(CommandSender sender, Command cmd, String label, String[] args) throws MissingPermissions, EasyCommandError {
 		label = preParseLabel(label);
 		String[] tempArr = new String[args.length + 1];
 	    tempArr[0] = label;
 	    System.arraycopy(args, 0, tempArr, 1, args.length);
-	    
-	    if(rootsToCMDS.containsKey(label) || aliasesToRoots.containsKey(label)) {
+
+		if(rootsToCMDS.containsKey(label) || aliasesToRoots.containsKey(label)) {
 	    	try {
 				CMDStruct root = rootsToCMDS.get(label);
 				if(root == null) {
 					root = rootsToCMDS.get(aliasesToRoots.get(label));
 					tempArr[0] = aliasesToRoots.get(label);
 				}
-				if(root == null) return false;
+				if(root == null) return true;
 				CMDPair<CMDStruct, Map<String, String>> pair = root.search(tempArr);
 
 				CMDStruct struct = pair.getFirst();
@@ -114,25 +122,26 @@ public class CMDManager implements TabExecutor{
 					}
 					return struct.getFunc().func(sender, cmd, label, args, wildCards);
 				}
-				return false;
 			} catch (EasyCommandError e) {
-				sender.sendMessage(ChatColor.RED + "An error occured please check the error message for details.");
-				e.printStackTrace();
-				return true;
+				if(e.getErrorReason().equals(EasyCommandError.ErrorReason.COMMAND_NOT_FOUND)){
+					sender.sendMessage(ChatColor.RED + "Command: " + ChatColor.AQUA + String.join(" ", tempArr) + ChatColor.RED + " not found!");
+					return true;
+				}
+				throw e;
 			}
 	    }
-	    return false;
+	    return true;
 	}
 	
-	public ArrayList<String> tabComplete(CommandSender sender, Command cmd, String label, String[] args){
+	private List<String> tabComplete(CommandSender sender, Command cmd, String label, String[] args){
 		label = preParseLabel(label);
 		String[] tempArr = new String[args.length];
 	    tempArr[0] = label;
 	    System.arraycopy(args, 0, tempArr, 1, args.length-1);
 		if(rootsToCMDS.containsKey(label)) {
-			return rootsToCMDS.get(label).getTabList(tempArr, sender, cmd, label, args);
+			return rootsToCMDS.get(label).getTabList(tempArr, args[args.length-1], sender, cmd, label, args);
 		}else {
-			return null;
+			return new ArrayList<>();
 		}
 	}
 
@@ -141,18 +150,15 @@ public class CMDManager implements TabExecutor{
 		try {
 			return call(sender, cmd, label, args);
 		} catch (MissingPermissions e) {
-			MissingPermissions err = null;
 			if(e.getHandle() != null) {
-				err = e.getHandle().handleMissingPermission(e);
+				e.getHandle().handleMissingPermission(e);
 			}else if(this.missingPermsHandle != null) {
-				err = this.missingPermsHandle.handleMissingPermission(e);
+				this.missingPermsHandle.handleMissingPermission(e);
 			}
-			if(err != null) return err.returnStatus();
-			return true;
 		} catch (EasyCommandError e) {
 			sender.sendMessage(e.getMessage());
-			return true;
 		} 
+		return true;
 	}
 	
 	@Override

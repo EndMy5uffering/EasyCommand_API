@@ -9,7 +9,6 @@ public class MissingPermissions extends Exception{
 	private String message;
 	private final Player player;
 	private final MissingPermissionHandle handle;
-	private boolean returnStatus = true;
 	
 	public MissingPermissions(Player player, MissingPermissionHandle handle, String message, String label, String[] args) {
 		super(message);
@@ -44,13 +43,4 @@ public class MissingPermissions extends Exception{
 	public MissingPermissionHandle getHandle() {
 		return handle;
 	}
-
-	public boolean returnStatus() {
-		return returnStatus;
-	}
-
-	public void setReturnStatus(boolean returnStatus) {
-		this.returnStatus = returnStatus;
-	}
-	
 }

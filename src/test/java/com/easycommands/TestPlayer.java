@@ -1,6 +1,7 @@
 package com.easycommands;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -72,10 +73,12 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
+import org.checkerframework.checker.units.qual.s;
 
 public class TestPlayer implements Player{
 
     public Set<String> permissions = new HashSet<>();
+    public ArrayList<String> messages = new ArrayList<>();
 
     @Override
     public void closeInventory() {
@@ -1267,30 +1270,25 @@ public class TestPlayer implements Player{
 
     @Override
     public void sendMessage(String arg0) {
-        // TODO Auto-generated method stub
-        System.out.println(arg0);   
+        this.messages.add(arg0);
     }
 
     @Override
     public void sendMessage(String... arg0) {
-        // TODO Auto-generated method stub
         for(String s: arg0){
-            System.out.println(s);
+            this.messages.add(s);
         }
     }
 
     @Override
     public void sendMessage(UUID arg0, String arg1) {
-        // TODO Auto-generated method stub
-        System.out.println(arg0.toString() + " | " + arg1);
-        
+        this.messages.add(arg0.toString() + " " + arg1);        
     }
 
     @Override
     public void sendMessage(UUID arg0, String... arg1) {
-        // TODO Auto-generated method stub
         for(String s: arg1){
-            System.out.println(arg0.toString() + " | " + s);
+            this.messages.add(arg0.toString() + " | " + s);
         }
         
     }
