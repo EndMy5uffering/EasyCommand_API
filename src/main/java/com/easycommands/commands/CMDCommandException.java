@@ -1,6 +1,6 @@
 package com.easycommands.commands;
 
-public class EasyCommandError extends Exception{
+public class CMDCommandException extends Exception{
 
 	public enum ErrorReason{
 		COMMAND_NOT_FOUND {
@@ -32,11 +32,11 @@ public class EasyCommandError extends Exception{
 
 	private final ErrorReason reason;
 	
-	public EasyCommandError(ErrorReason reason) {
+	public CMDCommandException(ErrorReason reason) {
 		this("No details given.", reason);
 	}
 	
-	public EasyCommandError(String message, ErrorReason reason) {
+	public CMDCommandException(String message, ErrorReason reason) {
 		super(message);
 		this.reason = reason;
 	}

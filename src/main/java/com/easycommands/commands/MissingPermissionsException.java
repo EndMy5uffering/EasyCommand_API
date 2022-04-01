@@ -2,7 +2,7 @@ package com.easycommands.commands;
 
 import org.bukkit.entity.Player;
 
-public class MissingPermissions extends Exception{
+public class MissingPermissionsException extends Exception{
 
 	private final String label;
 	private final String[] args;
@@ -10,7 +10,7 @@ public class MissingPermissions extends Exception{
 	private final Player player;
 	private final MissingPermissionHandle handle;
 	
-	public MissingPermissions(Player player, MissingPermissionHandle handle, String message, String label, String[] args) {
+	public MissingPermissionsException(Player player, MissingPermissionHandle handle, String message, String label, String[] args) {
 		super(message);
 		this.label = label;
 		this.args = args;

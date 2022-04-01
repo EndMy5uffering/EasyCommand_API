@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -37,11 +38,15 @@ public class CMDManager implements TabExecutor{
 	private String[] preParse(String cmd) {
 		String[] parts = cmd.split(" ");
 		parts[0] = preParseLabel(parts[0]);
+		if(this.plugin != null && !this.rootsToCMDS.containsKey(parts[0])){
+			PluginCommand command = ((JavaPlugin)plugin).getCommand(parts[0]);
+			if(command != null)
+				command.setExecutor(this);
+			else
+				plugin.getLogger().log(Level.WARNING, "Could not register executor for: " + parts[0]);
+		}
 		if(!rootsToCMDS.containsKey(parts[0])) {
 			rootsToCMDS.put(parts[0], new CMDStruct(parts[0], null));
-		}
-		if(this.plugin != null && !this.rootsToCMDS.containsKey(parts[0])){
-			((JavaPlugin)plugin).getCommand(parts[0].substring(1)).setExecutor(this);
 		}
 		return parts;
 	}
@@ -54,7 +59,7 @@ public class CMDManager implements TabExecutor{
 		String[] parts = preParse(cmd);
 		try {
 			rootsToCMDS.get(parts[0]).addCMD(parts, func);
-		} catch (EasyCommandError e) {
+		} catch (CMDCommandException e) {
 			if(this.plugin != null) plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
 			return false;
 		}
@@ -70,7 +75,7 @@ public class CMDManager implements TabExecutor{
 		try {
 			rootsToCMDS.get(parts[0]).addCMDLookup(parts, lookup);
 			return true;
-		} catch (EasyCommandError e) {
+		} catch (CMDCommandException e) {
 			if(this.plugin != null) plugin.getLogger().log(Level.WARNING, e.getMessage());
 		}
 		return false;
@@ -85,7 +90,7 @@ public class CMDManager implements TabExecutor{
 		try {
 			rootsToCMDS.get(parts[0]).addPermissionCheck(parts, check, handle);
 			return true;
-		} catch (EasyCommandError e) {
+		} catch (CMDCommandException e) {
 			if(this.plugin != null) plugin.getLogger().log(Level.WARNING, e.getMessage());
 		}
 		return false;
@@ -95,7 +100,7 @@ public class CMDManager implements TabExecutor{
 		this.missingPermsHandle = mph;
 	}
 	
-	private boolean call(CommandSender sender, Command cmd, String label, String[] args) throws MissingPermissions, EasyCommandError {
+	private boolean call(CommandSender sender, Command cmd, String label, String[] args) throws MissingPermissionsException, CMDCommandException {
 		label = preParseLabel(label);
 		String[] tempArr = new String[args.length + 1];
 	    tempArr[0] = label;
@@ -118,12 +123,12 @@ public class CMDManager implements TabExecutor{
 					if(sender instanceof Player){
 						CMDStruct faildStruct = root.checkPermission(tempArr, (Player)sender);
 						if(faildStruct != null)
-							throw new MissingPermissions((Player)sender, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
+							throw new MissingPermissionsException((Player)sender, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
 					}
 					return struct.getFunc().func(sender, cmd, label, args, wildCards);
 				}
-			} catch (EasyCommandError e) {
-				if(e.getErrorReason().equals(EasyCommandError.ErrorReason.COMMAND_NOT_FOUND)){
+			} catch (CMDCommandException e) {
+				if(e.getErrorReason().equals(CMDCommandException.ErrorReason.COMMAND_NOT_FOUND)){
 					sender.sendMessage(ChatColor.RED + "Command: " + ChatColor.AQUA + String.join(" ", tempArr) + ChatColor.RED + " not found!");
 					return true;
 				}
@@ -149,13 +154,13 @@ public class CMDManager implements TabExecutor{
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		try {
 			return call(sender, cmd, label, args);
-		} catch (MissingPermissions e) {
+		} catch (MissingPermissionsException e) {
 			if(e.getHandle() != null) {
 				e.getHandle().handleMissingPermission(e);
 			}else if(this.missingPermsHandle != null) {
 				this.missingPermsHandle.handleMissingPermission(e);
 			}
-		} catch (EasyCommandError e) {
+		} catch (CMDCommandException e) {
 			sender.sendMessage(e.getMessage());
 		} 
 		return true;

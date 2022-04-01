@@ -11,8 +11,8 @@ import java.util.Map;
 
 import com.easycommands.commands.CMDManager;
 import com.easycommands.commands.CMDStruct;
-import com.easycommands.commands.EasyCommandError;
-import com.easycommands.commands.MissingPermissions;
+import com.easycommands.commands.CMDCommandException;
+import com.easycommands.commands.MissingPermissionsException;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -61,7 +61,7 @@ public class CmdTest {
         try {
             List<CMDStruct> structs = getCMDStructs("cmd", m);
             assertTrue("Function was not added for simple command /cmd" ,structs.get(0).getFunc() != null);
-        } catch (EasyCommandError e1) {
+        } catch (CMDCommandException e1) {
             assert(false);
         }
     }
@@ -75,7 +75,7 @@ public class CmdTest {
 
         try {
             assertTrue("Call of base command returned false!", makeCall(m, player, null, "cmd", new String[0]));
-        } catch (MissingPermissions | EasyCommandError e) {
+        } catch (MissingPermissionsException | CMDCommandException e) {
             assertTrue("Error while calling: " + e.getMessage(), false);
         }
         assertTrue("Some error occured while calling the command!", player.messages.size() == 0);
@@ -95,7 +95,7 @@ public class CmdTest {
 
         try {
             assertTrue("Call of base command returned false!", makeCall(m, player, null, "cmd", new String[]{"a" , "b", "c", "d", "e"}));
-        } catch (MissingPermissions | EasyCommandError e) {
+        } catch (MissingPermissionsException | CMDCommandException e) {
             assertTrue("Error while calling: " + e.getMessage(), false);
         }
         assertTrue("Some error occured while calling the command!", player.messages.size() == 1);
@@ -143,15 +143,15 @@ public class CmdTest {
         try {
             makeCall(m, player, null, "cmd", new String[]{"arg3", "arg1", "permlocked"});
             assertTrue("Expected exception got none!", false);
-        } catch (MissingPermissions | EasyCommandError e) {
-            assertTrue("Expected missing permissions error got: " + e.getClass().getSimpleName() + ": " + e.getMessage(), e instanceof MissingPermissions);
+        } catch (MissingPermissionsException | CMDCommandException e) {
+            assertTrue("Expected missing permissions error got: " + e.getClass().getSimpleName() + ": " + e.getMessage(), e instanceof MissingPermissionsException);
         }
 
         player.permissions.add(TESTPERM);
 
         try {
             assertTrue("Call of permission locked command expected to return true got false", makeCall(m, player, null, "cmd", new String[]{"arg3", "arg1", "permlocked"}));
-        } catch (MissingPermissions | EasyCommandError e) {
+        } catch (MissingPermissionsException | CMDCommandException e) {
             assertTrue("No error expeced, got: " + e.getClass().getSimpleName() + ": " + e.getMessage(), false);
         }
     }
@@ -173,7 +173,7 @@ public class CmdTest {
         return null;
     }
 
-    private boolean makeCall(CMDManager m, CommandSender sender, Command cmd, String lable, String[] args) throws MissingPermissions, EasyCommandError{
+    private boolean makeCall(CMDManager m, CommandSender sender, Command cmd, String lable, String[] args) throws MissingPermissionsException, CMDCommandException{
         try {
             Method call = getCallMethod();
             if(call == null) {
@@ -183,10 +183,10 @@ public class CmdTest {
             call.setAccessible(true);
             return (boolean) call.invoke(m, sender, cmd, lable, args);
         } catch(InvocationTargetException e){
-            if(e.getTargetException() instanceof MissingPermissions)
-                throw (MissingPermissions)e.getTargetException();
-            if(e.getTargetException() instanceof EasyCommandError)
-                throw (EasyCommandError)e.getTargetException();
+            if(e.getTargetException() instanceof MissingPermissionsException)
+                throw (MissingPermissionsException)e.getTargetException();
+            if(e.getTargetException() instanceof CMDCommandException)
+                throw (CMDCommandException)e.getTargetException();
             assertTrue("Error in call function! Message: " + e.getTargetException().getMessage(), false);
             return false;
         }catch (IllegalAccessException | IllegalArgumentException e) {
@@ -195,7 +195,7 @@ public class CmdTest {
         }
     }
 
-    private List<CMDStruct> getCMDStructs(String path, CMDManager m) throws EasyCommandError {
+    private List<CMDStruct> getCMDStructs(String path, CMDManager m) throws CMDCommandException {
         try {
             Method preParse = m.getClass().getDeclaredMethod("preParse", String.class);
             preParse.setAccessible(true);
@@ -208,7 +208,7 @@ public class CmdTest {
             Map<String, CMDStruct> paths = (Map<String, CMDStruct>)pathlist;
 
             return paths.get(parts[0]).getPath(parts);
-        }catch(EasyCommandError e){
+        }catch(CMDCommandException e){
             throw e;
         } catch (Exception e) {
             return null;

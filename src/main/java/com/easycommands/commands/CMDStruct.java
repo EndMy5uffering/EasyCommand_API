@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import com.easycommands.commands.EasyCommandError.ErrorReason;
+import com.easycommands.commands.CMDCommandException.ErrorReason;
 import com.google.common.collect.Lists;
 
 import org.bukkit.command.Command;
@@ -40,17 +40,17 @@ public class CMDStruct {
 		this.func = func;
 	}
 	
-	public CMDPair<CMDStruct, Map<String, String>> search(String[] cmd) throws EasyCommandError {
+	public CMDPair<CMDStruct, Map<String, String>> search(String[] cmd) throws CMDCommandException {
 		return this.search(cmd, new HashMap<>(), 0);
 	}
 	
-	private CMDPair<CMDStruct, Map<String, String>> search(String[] parts, Map<String,String> wildCards, int c) throws EasyCommandError {
+	private CMDPair<CMDStruct, Map<String, String>> search(String[] parts, Map<String,String> wildCards, int c) throws CMDCommandException {
 		if(this.isVarArg){
 			return new CMDPair<CMDStruct,Map<String,String>>(this, wildCards);
 		}
 		
 		if(!this.isWildCard && !parts[c].equalsIgnoreCase(this.part)) 
-			throw new EasyCommandError("Pattern mismatch while searching!\nExpected: " + this.part + " got " + parts[c], ErrorReason.COMMAND_NOT_FOUND);
+			throw new CMDCommandException("Pattern mismatch while searching!\nExpected: " + this.part + " got " + parts[c], ErrorReason.COMMAND_NOT_FOUND);
 
 		if(this.isWildCard)
 			wildCards.put(this.part.replace("<", "").replace(">", ""), parts[c]);
@@ -61,7 +61,7 @@ public class CMDStruct {
 			}else if(!hasNext(parts[c+1]) && this.nextWildCard != null){
 				return this.nextWildCard.search(parts, wildCards, ++c);
 			}else{
-				throw new EasyCommandError("Pattern mismatch while searching! No part in the command matches: "+ parts[c+1], ErrorReason.COMMAND_NOT_FOUND);
+				throw new CMDCommandException("Pattern mismatch while searching! No part in the command matches: "+ parts[c+1], ErrorReason.COMMAND_NOT_FOUND);
 			}
 		}
 		return new CMDPair<CMDStruct,Map<String,String>>(this, wildCards);
@@ -86,19 +86,19 @@ public class CMDStruct {
 				}
 				return Lists.newArrayList(output);
 			}
-		} catch (EasyCommandError e) {
+		} catch (CMDCommandException e) {
 			return new ArrayList<>();
 		}
 		return new ArrayList<>();
 	}
 	
-	public List<CMDStruct> createPath(String[] parts) throws EasyCommandError{
+	public List<CMDStruct> createPath(String[] parts) throws CMDCommandException{
 		return createPath(parts, 1, new ArrayList<CMDStruct>());
 	}
 
-	private List<CMDStruct> createPath(String[] parts, int c, List<CMDStruct> list) throws EasyCommandError{
+	private List<CMDStruct> createPath(String[] parts, int c, List<CMDStruct> list) throws CMDCommandException{
 		if(this.isVarArg && c <= parts.length -1){
-			throw new EasyCommandError("Can not get path after variable argument!", ErrorReason.OTHER);
+			throw new CMDCommandException("Can not get path after variable argument!", ErrorReason.OTHER);
 		}
 		list.add(this);
 		if(c > parts.length - 1) {
@@ -107,7 +107,7 @@ public class CMDStruct {
 
 		boolean isNextWildCard = Pattern.matches(wildCardPattern, parts[c]);
 		if(isNextWildCard && this.nextWildCard != null && !this.nextWildCard.part.equals(parts[c])){
-			throw new EasyCommandError("Can not get path with more then one wildcard in a branch!", ErrorReason.OTHER);
+			throw new CMDCommandException("Can not get path with more then one wildcard in a branch!", ErrorReason.OTHER);
 		}else if(isNextWildCard && this.nextWildCard != null && this.nextWildCard.part.equals(parts[c])){
 			return this.nextWildCard.createPath(parts, ++c, list);
 		}else if(isNextWildCard && this.nextWildCard == null){
@@ -120,13 +120,13 @@ public class CMDStruct {
 		return this.getNext(parts[c]).createPath(parts, ++c, list);
 	}
 
-	public List<CMDStruct> getPath(String[] parts) throws EasyCommandError{
+	public List<CMDStruct> getPath(String[] parts) throws CMDCommandException{
 		return getPath(parts, 1, new ArrayList<CMDStruct>());
 	}
 
-	private List<CMDStruct> getPath(String[] parts, int c, List<CMDStruct> list) throws EasyCommandError{
+	private List<CMDStruct> getPath(String[] parts, int c, List<CMDStruct> list) throws CMDCommandException{
 		if(this.isVarArg && c <= parts.length -1){
-			throw new EasyCommandError("Can not get path after variable argument!", ErrorReason.OTHER);
+			throw new CMDCommandException("Can not get path after variable argument!", ErrorReason.OTHER);
 		}
 		list.add(this);
 		if(c > parts.length - 1) {
@@ -134,34 +134,34 @@ public class CMDStruct {
 		}
 
 		if(!this.hasNext(parts[c]) && this.nextWildCard == null)
-			throw new EasyCommandError("Pattern mismatch! No sub function found for: "+ parts[c], ErrorReason.CMD_MISSMATCH);
+			throw new CMDCommandException("Pattern mismatch! No sub function found for: "+ parts[c], ErrorReason.CMD_MISSMATCH);
 		else if(!this.hasNext(parts[c]) && this.nextWildCard != null)
 			return this.nextWildCard.getPath(parts, ++c, list);
 		if(!this.hasNext(parts[c]))
-			throw new EasyCommandError("Pattern mismatch! No sub function found for: "+ parts[c], ErrorReason.CMD_MISSMATCH);
+			throw new CMDCommandException("Pattern mismatch! No sub function found for: "+ parts[c], ErrorReason.CMD_MISSMATCH);
 		else
 			return this.getNext(parts[c]).getPath(parts, ++c, list);
 	}
  
 
-	public void addCMD(String[] parts, CMDFunction func) throws EasyCommandError {
+	public void addCMD(String[] parts, CMDFunction func) throws CMDCommandException {
 		List<CMDStruct> path = createPath(parts);
 		path.get(path.size()-1).setFunc(func);
 	}
 
-	public void addCMDLookup(String[] parts, CMDTabLookup tablookup) throws EasyCommandError {
+	public void addCMDLookup(String[] parts, CMDTabLookup tablookup) throws CMDCommandException {
 		List<CMDStruct> path = createPath(parts);
 		path.get(path.size()-1).setLookup(tablookup);
 	}
 	
-	public void addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle) throws EasyCommandError {
+	public void addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle) throws CMDCommandException {
 		List<CMDStruct> path = createPath(parts);
 		CMDStruct cstruct = path.get(path.size()-1);
 		cstruct.setPermissionCheck(permissionCheck);
 		cstruct.setMissingPermissinHandle(handle);
 	}
 
-	public CMDStruct checkPermission(String[] parts, Player p) throws EasyCommandError{
+	public CMDStruct checkPermission(String[] parts, Player p) throws CMDCommandException{
 		List<CMDStruct> path = getPath(parts);
 		boolean hasPermission = true;
 		for(CMDStruct s : path){
