@@ -43,7 +43,7 @@ public class CMDManager implements TabExecutor{
 			if(command != null)
 				command.setExecutor(this);
 			else
-				plugin.getLogger().log(Level.WARNING, "Could not register executor for: " + parts[0]);
+				plugin.getLogger().log(Level.WARNING, "Could not register executor for: " + cmd);
 		}
 		if(!rootsToCMDS.containsKey(parts[0])) {
 			rootsToCMDS.put(parts[0], new CMDStruct(parts[0], null));

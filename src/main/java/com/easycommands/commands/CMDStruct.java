@@ -50,7 +50,7 @@ public class CMDStruct {
 		}
 		
 		if(!this.isWildCard && !parts[c].equalsIgnoreCase(this.part)) 
-			throw new CMDCommandException("Pattern mismatch while searching!\nExpected: " + this.part + " got " + parts[c], ErrorReason.COMMAND_NOT_FOUND);
+			throw new CMDCommandException("Pattern mismatch while searching!\nExpected: \"" + this.part + "\" got \"" + parts[c] + "\" in command: " + String.join(" ", parts), ErrorReason.COMMAND_NOT_FOUND);
 
 		if(this.isWildCard)
 			wildCards.put(this.part.replace("<", "").replace(">", ""), parts[c]);
@@ -61,7 +61,7 @@ public class CMDStruct {
 			}else if(!hasNext(parts[c+1]) && this.nextWildCard != null){
 				return this.nextWildCard.search(parts, wildCards, ++c);
 			}else{
-				throw new CMDCommandException("Pattern mismatch while searching! No part in the command matches: "+ parts[c+1], ErrorReason.COMMAND_NOT_FOUND);
+				throw new CMDCommandException("Pattern mismatch while searching! No part in the command matches: \""+ parts[c+1] + "\" in command: " + String.join(" ", parts), ErrorReason.COMMAND_NOT_FOUND);
 			}
 		}
 		return new CMDPair<CMDStruct,Map<String,String>>(this, wildCards);
@@ -98,7 +98,7 @@ public class CMDStruct {
 
 	private List<CMDStruct> createPath(String[] parts, int c, List<CMDStruct> list) throws CMDCommandException{
 		if(this.isVarArg && c <= parts.length -1){
-			throw new CMDCommandException("Can not get path after variable argument!", ErrorReason.OTHER);
+			throw new CMDCommandException("Can not get path after variable argument! For command: " + String.join(" ", parts), ErrorReason.OTHER);
 		}
 		list.add(this);
 		if(c > parts.length - 1) {
@@ -107,7 +107,7 @@ public class CMDStruct {
 
 		boolean isNextWildCard = Pattern.matches(wildCardPattern, parts[c]);
 		if(isNextWildCard && this.nextWildCard != null && !this.nextWildCard.part.equals(parts[c])){
-			throw new CMDCommandException("Can not get path with more then one wildcard in a branch!", ErrorReason.OTHER);
+			throw new CMDCommandException("Can not get path with more then one wildcard in a branch! For command: " + String.join(" ", parts), ErrorReason.OTHER);
 		}else if(isNextWildCard && this.nextWildCard != null && this.nextWildCard.part.equals(parts[c])){
 			return this.nextWildCard.createPath(parts, ++c, list);
 		}else if(isNextWildCard && this.nextWildCard == null){
@@ -126,7 +126,7 @@ public class CMDStruct {
 
 	private List<CMDStruct> getPath(String[] parts, int c, List<CMDStruct> list) throws CMDCommandException{
 		if(this.isVarArg && c <= parts.length -1){
-			throw new CMDCommandException("Can not get path after variable argument!", ErrorReason.OTHER);
+			throw new CMDCommandException("Can not get path after variable argument! For command: " + String.join(" ", parts), ErrorReason.OTHER);
 		}
 		list.add(this);
 		if(c > parts.length - 1) {
@@ -134,11 +134,11 @@ public class CMDStruct {
 		}
 
 		if(!this.hasNext(parts[c]) && this.nextWildCard == null)
-			throw new CMDCommandException("Pattern mismatch! No sub function found for: "+ parts[c], ErrorReason.CMD_MISSMATCH);
+			throw new CMDCommandException("Pattern mismatch! No sub function found for: \""+ parts[c] + "\" in command: " + String.join(" ", parts), ErrorReason.CMD_MISSMATCH);
 		else if(!this.hasNext(parts[c]) && this.nextWildCard != null)
 			return this.nextWildCard.getPath(parts, ++c, list);
 		if(!this.hasNext(parts[c]))
-			throw new CMDCommandException("Pattern mismatch! No sub function found for: "+ parts[c], ErrorReason.CMD_MISSMATCH);
+			throw new CMDCommandException("Pattern mismatch! No sub function found for: \""+ parts[c] + "\" in command: " + String.join(" ", parts), ErrorReason.CMD_MISSMATCH);
 		else
 			return this.getNext(parts[c]).getPath(parts, ++c, list);
 	}
