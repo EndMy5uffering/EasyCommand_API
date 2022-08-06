@@ -26,6 +26,7 @@ import org.bukkit.SoundCategory;
 import org.bukkit.Statistic;
 import org.bukkit.WeatherType;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.attribute.Attribute;
@@ -73,7 +74,6 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
-import org.checkerframework.checker.units.qual.s;
 
 public class TestPlayer implements Player{
 
@@ -2383,6 +2383,18 @@ public class TestPlayer implements Player{
 
     @Override
     public void updateInventory() {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public WorldBorder getWorldBorder() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setWorldBorder(WorldBorder arg0) {
         // TODO Auto-generated method stub
         
     }

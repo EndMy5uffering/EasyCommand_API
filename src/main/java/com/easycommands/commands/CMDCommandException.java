@@ -26,6 +26,18 @@ public class CMDCommandException extends Exception{
 			public String toString() {
 				return "Other";
 			}
+		},
+		FUNCTION_WAS_NULL {
+			@Override
+			public String toString() {
+				return "Command function was null";
+			}
+		},
+		COMMAND_FUNCTION_INVOCATION_EXCEPTION {
+			@Override
+			public String toString() {
+				return "Command function could not be invoked";
+			}
 		};
 
 	}
@@ -33,7 +45,7 @@ public class CMDCommandException extends Exception{
 	private final ErrorReason reason;
 	
 	public CMDCommandException(ErrorReason reason) {
-		this("No details given.", reason);
+		this("[" + reason.toString() + "] No details given.", reason);
 	}
 	
 	public CMDCommandException(String message, ErrorReason reason) {

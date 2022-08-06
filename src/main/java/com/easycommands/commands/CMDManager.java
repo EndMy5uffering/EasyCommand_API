@@ -1,5 +1,6 @@
 package com.easycommands.commands;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,10 +59,32 @@ public class CMDManager implements TabExecutor{
 	public boolean register(String cmd, CMDFunction func) {
 		String[] parts = preParse(cmd);
 		try {
-			rootsToCMDS.get(parts[0]).addCMD(parts, func);
+			rootsToCMDS.get(parts[0]).addCMD(parts, new CMDMethodCollection(func));
 		} catch (CMDCommandException e) {
 			if(this.plugin != null) plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
 			return false;
+		}
+		return true;
+	}
+
+	public boolean register(Class<?> clazz){
+
+		Method[] methods = clazz.getMethods();
+
+		for(Method m : methods){
+			if(m.isAnnotationPresent(CMDCommand.class)){
+				CMDCommand commandAnnotation = m.getAnnotation(CMDCommand.class);
+
+				String command = commandAnnotation.cmd();
+				String[] parts = preParse(command);
+
+				try {
+					rootsToCMDS.get(parts[0]).addCMD(parts, new CMDMethodCollection(m));
+				} catch (CMDCommandException e) {
+					if(this.plugin != null) plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
+					return false;
+				}
+			}
 		}
 		return true;
 	}
@@ -125,7 +148,7 @@ public class CMDManager implements TabExecutor{
 						if(faildStruct != null)
 							throw new MissingPermissionsException((Player)sender, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
 					}
-					return struct.getFunc().func(sender, cmd, label, args, wildCards);
+					return struct.getFunc().call(new CMDArgs(sender, cmd, label, args, wildCards));
 				}
 			} catch (CMDCommandException e) {
 				if(e.getErrorReason().equals(CMDCommandException.ErrorReason.COMMAND_NOT_FOUND)){

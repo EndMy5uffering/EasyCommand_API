@@ -22,7 +22,7 @@ public class CMDStruct {
 	
 	private final String part;
 	private final boolean isWildCard, isVarArg;
-	private CMDFunction func;
+	private CMDMethodCollection func;
 	private Map<String, CMDStruct> next = new HashMap<>();
 	private CMDTabLookup lookup;
 	private PermissionCheck permissionCheck;
@@ -33,7 +33,7 @@ public class CMDStruct {
 		this(part, null);
 	}
 	
-	public CMDStruct(String part, CMDFunction func) {
+	public CMDStruct(String part, CMDMethodCollection func) {
 		this.isWildCard = Pattern.matches(wildCardPattern, part);
 		this.isVarArg = Pattern.matches(varargPattern, part);
 		this.part = part;
@@ -144,7 +144,7 @@ public class CMDStruct {
 	}
  
 
-	public void addCMD(String[] parts, CMDFunction func) throws CMDCommandException {
+	public void addCMD(String[] parts, CMDMethodCollection func) throws CMDCommandException {
 		List<CMDStruct> path = createPath(parts);
 		path.get(path.size()-1).setFunc(func);
 	}
@@ -195,7 +195,7 @@ public class CMDStruct {
 		return next.get(part);
 	}
 	
-	public CMDFunction getFunc() {
+	public CMDMethodCollection getFunc() {
 		return this.func;
 	}
 
@@ -223,7 +223,7 @@ public class CMDStruct {
 		this.nextWildCard = nextWildCard;
 	}
 
-	private void setFunc(CMDFunction func) {
+	private void setFunc(CMDMethodCollection func) {
 		this.func = func;
 	}
 

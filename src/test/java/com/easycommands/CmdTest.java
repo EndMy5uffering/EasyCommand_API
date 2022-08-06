@@ -1,5 +1,6 @@
 package com.easycommands;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
@@ -55,8 +56,8 @@ public class CmdTest {
     public void CMDRegistrationTest(){
         CMDManager m = new CMDManager();
 
-        m.register("cmd", (a,b,c,d,e)-> { return true; });
-        m.register("cmd arg1", (a,b,c,d,e)-> { return true; });
+        m.register("cmd", (a)-> { return true; });
+        m.register("cmd arg1", (a)-> { return true; });
 
         try {
             List<CMDStruct> structs = getCMDStructs("cmd", m);
@@ -156,8 +157,25 @@ public class CmdTest {
         }
     }
 
+    @Test
+    public void ClassRegistrationTest(){
+        CMDManager classRegManager = new CMDManager();
+        TestPlayer player = new TestPlayer();
+        assertFalse("Registration of 1st class should have faild. Class contains invalid functions!", classRegManager.register(RegisterClass.class));
+        assertFalse("Registration of 2nd class should have faild. Class contains invalid functions!", classRegManager.register(RegisterClass2.class));
+        assertTrue("Registration of 3ed class should have worked. Class contains only valid functions!", classRegManager.register(RegisterClass3.class));
+        assertFalse("Registration of 4th class should have faild. Class contains invalid functions!", classRegManager.register(RegisterClass4.class));
+
+        try {
+            assertTrue("Faild to execute command for registered class", makeCall(classRegManager, player, null, "functest", new String[]{"valid"}));
+        } catch (MissingPermissionsException | CMDCommandException e) {
+            assertTrue(false);
+        }
+
+    }
+
     private void assertRegister(String cmd, CMDManager m){
-        assertTrue("Could not register command: " + cmd, m.register(cmd, (a,b,c,d,e)-> { return true; }));
+        assertTrue("Could not register command: " + cmd, m.register(cmd, (a)-> { return true; }));
     }
 
     private Method getCallMethod(){
