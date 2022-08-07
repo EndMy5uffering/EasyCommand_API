@@ -161,16 +161,36 @@ public class CmdTest {
     public void ClassRegistrationTest(){
         CMDManager classRegManager = new CMDManager();
         TestPlayer player = new TestPlayer();
-        assertFalse("Registration of 1st class should have faild. Class contains invalid functions!", classRegManager.register(RegisterClass.class));
-        assertFalse("Registration of 2nd class should have faild. Class contains invalid functions!", classRegManager.register(RegisterClass2.class));
-        assertTrue("Registration of 3ed class should have worked. Class contains only valid functions!", classRegManager.register(RegisterClass3.class));
-        assertFalse("Registration of 4th class should have faild. Class contains invalid functions!", classRegManager.register(RegisterClass4.class));
+        assertFalse("Registration of 1st class should have faild. Class contains invalid functions!", classRegManager.register(new RegisterClass()));
+        assertFalse("Registration of 2nd class should have faild. Class contains invalid functions!", classRegManager.register(new RegisterClass2()));
+        assertTrue("Registration of 3ed class should have worked. Class contains only valid functions!", classRegManager.register(new RegisterClass3()));
+        assertFalse("Registration of 4th class should have faild. Class contains invalid functions!", classRegManager.register(new RegisterClass4()));
 
         try {
             assertTrue("Faild to execute command for registered class", makeCall(classRegManager, player, null, "functest", new String[]{"valid"}));
         } catch (MissingPermissionsException | CMDCommandException e) {
-            assertTrue(false);
+            assertTrue(e.getMessage(), false);
         }
+
+        try {
+            makeCall(classRegManager, player, null, "functest", new String[]{"valid2"});
+            assertTrue("Player was able to access function with permission restriction", false);
+        } catch (MissingPermissionsException e) {
+            assertTrue(true);
+        } catch(CMDCommandException e){
+            assertTrue(e.getMessage(), false);
+        }
+
+        player.permissions.add("functions.func4");
+        try {
+            assertTrue("Player was unable to access function with permission", makeCall(classRegManager, player, null, "functest", new String[]{"valid2"}));
+        } catch (MissingPermissionsException e) {
+            assertTrue(false);
+        } catch (CMDCommandException e) {
+            assertTrue(e.getMessage(), false);
+        }
+
+
 
     }
 

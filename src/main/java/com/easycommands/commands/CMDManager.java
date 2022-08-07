@@ -1,5 +1,6 @@
 package com.easycommands.commands;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,6 +17,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.easycommands.CMDListener;
+import com.easycommands.commands.PermissionGroup.Type;
+
 import net.md_5.bungee.api.ChatColor;
 
 public class CMDManager implements TabExecutor{
@@ -25,7 +29,7 @@ public class CMDManager implements TabExecutor{
 	private Map<String, CMDStruct> rootsToCMDS = new HashMap<>();
 	private Map<String, String> aliasesToRoots = new HashMap<>();
 	
-	private String firstLabel = "[/]*[a-zA-Z0-9]*";
+	private String firstLabel = "[/]+[a-zA-Z0-9]*";
 	private MissingPermissionHandle missingPermsHandle = (err) -> { 
 		err.getPlayer().sendMessage(err.getMessage());
 	};
@@ -67,23 +71,49 @@ public class CMDManager implements TabExecutor{
 		return true;
 	}
 
-	public boolean register(Class<?> clazz){
+	public boolean register(CMDListener listener){
 
-		Method[] methods = clazz.getMethods();
+		Method[] methods = listener.getClass().getMethods();
 
 		for(Method m : methods){
 			if(m.isAnnotationPresent(CMDCommand.class)){
 				CMDCommand commandAnnotation = m.getAnnotation(CMDCommand.class);
 
+				Annotation[] annotations = m.getAnnotations();
 				String command = commandAnnotation.cmd();
 				String[] parts = preParse(command);
 
 				try {
-					rootsToCMDS.get(parts[0]).addCMD(parts, new CMDMethodCollection(m));
+					rootsToCMDS.get(parts[0]).addCMD(parts, new CMDMethodCollection(listener, m));
 				} catch (CMDCommandException e) {
 					if(this.plugin != null) plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
 					return false;
 				}
+
+				if(m.isAnnotationPresent(Permission.class)){
+					List<String[]> permsList = new ArrayList<>();
+					for(Annotation a : annotations){
+						if(a instanceof Permission perms){
+							permsList.add(perms.Permissions());
+						}
+					}
+
+					String[][] permArray = new String[permsList.size()][];
+
+					for(int i = 0; i < permsList.size(); ++i){
+						permArray[i] = permsList.get(i);
+					}
+
+					PermissionGroup PermGroup = new PermissionGroup(Type.CONJUNCTIVE, permArray);
+					registerPermissionCheck(command, (player) -> {
+						System.out.println("Checking perms: " + PermGroup.hasPermission(player));
+						return PermGroup.hasPermission(player);
+					});
+
+				}
+
+
+
 			}
 		}
 		return true;

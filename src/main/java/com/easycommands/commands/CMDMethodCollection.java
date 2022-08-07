@@ -3,36 +3,38 @@ package com.easycommands.commands;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import com.easycommands.commands.CMDCommandException.ErrorReason;
+import com.easycommands.CMDListener;
 
 public class CMDMethodCollection {
-    public CMDFunction cmdFunction;
-    public Method method;
 
-    public CMDMethodCollection(Object func) throws CMDCommandException{
-        if(func instanceof CMDFunction){
-            cmdFunction = (CMDFunction) func;
-        }else if(func instanceof Method){
-            Method m = (Method) func;
-            Class<?>[] argList = m.getParameterTypes();
-            if(m.getReturnType() == boolean.class && argList.length == 1 && argList[0].getClass().equals(CMDArgs.class.getClass()))
-                this.method = m;
-            else
-                throw new CMDCommandException("Give function was invalid(" + m.getName() + ")", ErrorReason.OTHER);
+    interface CMDCallable{
+        boolean call(CMDArgs args) throws CMDCommandException;
+    }
+
+    private CMDCallable callable; 
+
+    public CMDMethodCollection(CMDFunction func){
+        this.callable = (args) -> func.func(args);
+    }
+
+    public CMDMethodCollection(CMDListener listener, Method m) throws CMDCommandException{
+        Class<?>[] params = m.getParameterTypes();
+        if(m.isAnnotationPresent(CMDCommand.class) && params.length == 1 && params[0] == CMDArgs.class){
+            this.callable = (args) -> {
+                try {
+                    return (boolean)m.invoke(listener, args);
+                } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                    throw new CMDCommandException(e.getMessage());
+                }
+            };
+        }else{
+            throw new CMDCommandException("Invalid method! " + m.getName());
         }
     }
 
     public boolean call(CMDArgs args) throws CMDCommandException {
-        if(this.cmdFunction != null) return this.cmdFunction.func(args);
-        if(this.method != null){
-            try {
-                return (boolean) this.method.invoke(args);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                throw new CMDCommandException(e.getMessage(), ErrorReason.COMMAND_FUNCTION_INVOCATION_EXCEPTION);
-            }
-        }
-
-        throw new CMDCommandException(ErrorReason.FUNCTION_WAS_NULL);
-            
+        return callable.call(args);
     }
+
+
 }

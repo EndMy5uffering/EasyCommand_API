@@ -53,6 +53,11 @@ public class CMDCommandException extends Exception{
 		this.reason = reason;
 	}
 
+	public CMDCommandException(String message) {
+		super(message);
+		this.reason = ErrorReason.OTHER;
+	}
+
 	public ErrorReason getErrorReason(){
 		return this.reason;
 	}
