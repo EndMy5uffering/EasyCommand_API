@@ -194,6 +194,18 @@ public class CmdTest {
 
     }
 
+    @Test
+    public void ClassRegistrationTestTabComplete(){
+        CMDManager classRegManager = new CMDManager();
+        TestPlayer player = new TestPlayer();
+        assertTrue("Registration of 3ed class should have worked. Class contains only valid functions!", classRegManager.register(new RegisterClass3()));
+
+
+        List<String> results = classRegManager.onTabComplete(player, null, "functest", new String[]{""});
+        List<String> shouldBe = List.of("valid", "valid2");
+        assertTrue("Not all elements in result: expected:[" + String.join(", ", shouldBe) + "] got: " + "[" + String.join(", ", results) + "]", results.containsAll(shouldBe) && shouldBe.containsAll(results) && results.size() == shouldBe.size());
+    }
+
     private void assertRegister(String cmd, CMDManager m){
         assertTrue("Could not register command: " + cmd, m.register(cmd, (a)-> { return true; }));
     }

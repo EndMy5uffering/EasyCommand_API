@@ -44,7 +44,7 @@ public class CMDManager implements TabExecutor{
 		String[] parts = cmd.split(" ");
 		parts[0] = preParseLabel(parts[0]);
 		if(this.plugin != null && !this.rootsToCMDS.containsKey(parts[0])){
-			PluginCommand command = ((JavaPlugin)plugin).getCommand(parts[0]);
+			PluginCommand command = ((JavaPlugin)plugin).getCommand(parts[0].substring(1, parts[0].length()));
 			if(command != null)
 				command.setExecutor(this);
 			else
