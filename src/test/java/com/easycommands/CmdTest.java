@@ -39,7 +39,7 @@ public class CmdTest {
         assertRegister("cmd <arg> arg1 <arg2>", m);
 
         m.registerAliase("cmd", "c");
-        assertTrue("Could not register tab lookup for: cmd arg1", m.registerTabLookup("cmd <arg>", (a,b,c,d,e) -> { return List.of("tmp1", "tmp2", "tmp3"); }));
+        assertTrue("Could not register tab lookup for: cmd arg1", m.registerTabLookup("cmd <arg>", (a) -> { return List.of("tmp1", "tmp2", "tmp3"); }));
 
         assertTrue("Could not register permmision check for: cmd", m.registerPermissionCheck("cmd", (player) -> {
             return player.hasPermission(DEFAULTPERM);
@@ -206,6 +206,41 @@ public class CmdTest {
         assertTrue("Not all elements in result: expected:[" + String.join(", ", shouldBe) + "] got: " + "[" + String.join(", ", results) + "]", results.containsAll(shouldBe) && shouldBe.containsAll(results) && results.size() == shouldBe.size());
     }
 
+    
+    @Test
+    public void suggestWildcrads(){
+        CMDManager m1 = new CMDManager();
+        m1.suggestWildcardNames(true);
+        TestPlayer player = new TestPlayer();
+        m1.register("/test <m1> t1", (a) -> {return true;});
+        m1.register("/test t1 <m64> t8", (a) -> {return true;});
+        m1.register("/test t2 <m32> t99", (a) -> {return true;});
+        m1.register("/test t3 <m16> t66", (a) -> {return true;});
+        m1.register("/test abc <m128> abc", (a) -> {return true;});
+        m1.registerTabLookup("/test abc <m128>", (a) -> { return List.of("a", "b");});
+
+        List<String> results = m1.onTabComplete(player, null, "test", new String[]{""});
+        List<String> shouldBe = List.of("<m1>", "t1", "t2", "t3", "abc");
+        assertTrue("Not all elements in result: expected:[" + String.join(", ", shouldBe) + "] got: " + "[" + String.join(", ", results) + "]", results.containsAll(shouldBe) && shouldBe.containsAll(results) && results.size() == shouldBe.size());
+ 
+        results = m1.onTabComplete(player, null, "test", new String[]{"t1", ""});
+        shouldBe = List.of("<m64>");
+        assertTrue("Not all elements in result: expected:[" + String.join(", ", shouldBe) + "] got: " + "[" + String.join(", ", results) + "]", results.containsAll(shouldBe) && shouldBe.containsAll(results) && results.size() == shouldBe.size());
+      
+        results = m1.onTabComplete(player, null, "test", new String[]{"t3", ""});
+        shouldBe = List.of("<m16>");
+        assertTrue("Not all elements in result: expected:[" + String.join(", ", shouldBe) + "] got: " + "[" + String.join(", ", results) + "]", results.containsAll(shouldBe) && shouldBe.containsAll(results) && results.size() == shouldBe.size());
+ 
+        results = m1.onTabComplete(player, null, "test", new String[]{"a", ""});
+        shouldBe = List.of("t1");
+        assertTrue("Not all elements in result: expected:[" + String.join(", ", shouldBe) + "] got: " + "[" + String.join(", ", results) + "]", results.containsAll(shouldBe) && shouldBe.containsAll(results) && results.size() == shouldBe.size());
+    
+        results = m1.onTabComplete(player, null, "test", new String[]{"abc", ""});
+        shouldBe = List.of("a", "b");
+        assertTrue("Not all elements in result: expected:[" + String.join(", ", shouldBe) + "] got: " + "[" + String.join(", ", results) + "]", results.containsAll(shouldBe) && shouldBe.containsAll(results) && results.size() == shouldBe.size());
+    
+    }
+
     private void assertRegister(String cmd, CMDManager m){
         assertTrue("Could not register command: " + cmd, m.register(cmd, (a)-> { return true; }));
     }
@@ -244,6 +279,7 @@ public class CmdTest {
             return false;
         }
     }
+
 
     private List<CMDStruct> getCMDStructs(String path, CMDManager m) throws CMDCommandException {
         try {

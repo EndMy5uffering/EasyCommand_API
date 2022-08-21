@@ -67,7 +67,7 @@ public class CMDStruct {
 		return new CMDPair<CMDStruct,Map<String,String>>(this, wildCards);
 	}
 	
-	public List<String> getTabList(String[] parts, String partial, CommandSender sender, Command cmd, String str, String[] args){
+	public List<String> getTabList(String[] parts, String partial, CommandSender sender, Command cmd, String str, String[] args, boolean includeWildcards){
 		try {
 			CMDPair<CMDStruct, Map<String, String>> res = search(parts);
 			CMDStruct struct = res.getFirst();
@@ -79,11 +79,12 @@ public class CMDStruct {
 						output.add(element.part);
 				}
 				if(struct.nextWildCard != null && struct.nextWildCard.lookup != null){
-					for(String item : struct.nextWildCard.lookup.get(sender, cmd, str, args, wildCards)){
+					for(String item : struct.nextWildCard.lookup.get(new CMDArgs(sender, cmd, str, args, wildCards))){
 						if(item.contains(partial))
 							output.add(item);
 					}
 				}
+				if(includeWildcards && struct.nextWildCard != null && struct.nextWildCard.lookup == null) output.add(struct.nextWildCard.getPart());
 				return Lists.newArrayList(output);
 			}
 		} catch (CMDCommandException e) {

@@ -25,6 +25,7 @@ import net.md_5.bungee.api.ChatColor;
 public class CMDManager implements TabExecutor{
 	
 	private Plugin plugin = null;
+	private boolean suggestWildcardNames = false;
 
 	private Map<String, CMDStruct> rootsToCMDS = new HashMap<>();
 	private Map<String, String> aliasesToRoots = new HashMap<>();
@@ -197,7 +198,7 @@ public class CMDManager implements TabExecutor{
 	    tempArr[0] = label;
 	    System.arraycopy(args, 0, tempArr, 1, args.length-1);
 		if(rootsToCMDS.containsKey(label)) {
-			return rootsToCMDS.get(label).getTabList(tempArr, args[args.length-1], sender, cmd, label, args);
+			return rootsToCMDS.get(label).getTabList(tempArr, args[args.length-1], sender, cmd, label, args, this.suggestWildcardNames);
 		}else {
 			return new ArrayList<>();
 		}
@@ -222,6 +223,10 @@ public class CMDManager implements TabExecutor{
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
 		return tabComplete(sender, cmd, label, args);
+	}
+
+	public void suggestWildcardNames(boolean suggest){
+		this.suggestWildcardNames = suggest;
 	}
 	
 }
