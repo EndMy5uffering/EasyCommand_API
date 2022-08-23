@@ -37,8 +37,8 @@ public class CMDArgs {
         return this.args;
     }
 
-    public Map<String,String> getWildCards() {
-        return this.wildCards;
+    public String getWildCard(String name) {
+        return this.wildCards.get(name);
     }
 
     public boolean hasWildCard(String name){
