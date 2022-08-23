@@ -54,7 +54,7 @@ public class CMDArgs {
     }
 
     public boolean getWildCardBoolean(String name){
-        return Boolean.parseBoolean(name);
+        return Boolean.parseBoolean(this.getWildCard(name));
     }
 
     public boolean isWildCardNumber(String name){
@@ -67,12 +67,8 @@ public class CMDArgs {
     }
 
     public boolean isWildCardBoolean(String name){
-        try {
-            Boolean.parseBoolean(this.wildCards.get(name));
-        } catch (Exception e) {
-            return false;
-        }
-        return true;
+        String value = this.wildCards.get(name).toLowerCase();
+        return value.equals("true") || value.equals("false");
     }
 
 }
