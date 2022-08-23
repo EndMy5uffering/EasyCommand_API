@@ -180,6 +180,8 @@ public class CMDManager implements TabExecutor{
 							throw new MissingPermissionsException((Player)sender, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
 					}
 					return struct.getFunc().call(new CMDArgs(sender, cmd, label, args, wildCards));
+				}else{
+					sender.sendMessage(ChatColor.RED + "Command: " + ChatColor.AQUA + String.join(" ", tempArr) + ChatColor.RED + " not found!");
 				}
 			} catch (CMDCommandException e) {
 				if(e.getErrorReason().equals(CMDCommandException.ErrorReason.COMMAND_NOT_FOUND)){
@@ -215,7 +217,7 @@ public class CMDManager implements TabExecutor{
 				this.missingPermsHandle.handleMissingPermission(e);
 			}
 		} catch (CMDCommandException e) {
-			sender.sendMessage(e.getMessage());
+			sender.sendMessage(ChatColor.RED + "Exception: " + e.getMessage());
 		} 
 		return true;
 	}

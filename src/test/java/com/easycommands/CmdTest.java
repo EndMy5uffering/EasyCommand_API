@@ -205,7 +205,6 @@ public class CmdTest {
         List<String> shouldBe = List.of("valid", "valid2");
         assertTrue("Not all elements in result: expected:[" + String.join(", ", shouldBe) + "] got: " + "[" + String.join(", ", results) + "]", results.containsAll(shouldBe) && shouldBe.containsAll(results) && results.size() == shouldBe.size());
     }
-
     
     @Test
     public void suggestWildcrads(){
