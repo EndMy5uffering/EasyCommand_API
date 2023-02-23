@@ -1,4 +1,4 @@
-package com.easycommands.commands;
+package com.endmysuffering.easycommands;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import com.easycommands.commands.CMDCommandException.ErrorReason;
+import com.endmysuffering.easycommands.CMDCommandException.ErrorReason;
 import com.google.common.collect.Lists;
 
 import org.bukkit.command.Command;

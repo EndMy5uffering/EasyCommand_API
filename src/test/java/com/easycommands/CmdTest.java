@@ -9,14 +9,14 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
-import com.easycommands.commands.CMDManager;
-import com.easycommands.commands.CMDStruct;
-import com.easycommands.commands.CMDCommandException;
-import com.easycommands.commands.MissingPermissionsException;
-
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.junit.Test;
+
+import com.endmysuffering.easycommands.CMDCommandException;
+import com.endmysuffering.easycommands.CMDManager;
+import com.endmysuffering.easycommands.CMDStruct;
+import com.endmysuffering.easycommands.MissingPermissionsException;
 
 public class CmdTest {
     

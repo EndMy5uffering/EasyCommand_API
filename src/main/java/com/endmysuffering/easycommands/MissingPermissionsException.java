@@ -1,4 +1,4 @@
-package com.easycommands.commands;
+package com.endmysuffering.easycommands;
 
 import org.bukkit.entity.Player;
 

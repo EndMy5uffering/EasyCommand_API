@@ -1,4 +1,4 @@
-package com.easycommands.commands;
+package com.endmysuffering.easycommands;
 
 import java.util.ArrayList;
 import java.util.HashSet;

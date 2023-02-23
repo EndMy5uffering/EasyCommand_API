@@ -1,4 +1,4 @@
-package com.easycommands.commands;
+package com.endmysuffering.easycommands;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -17,8 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.easycommands.CMDListener;
-import com.easycommands.commands.PermissionGroup.Type;
+import com.endmysuffering.easycommands.PermissionGroup.Type;
 
 import net.md_5.bungee.api.ChatColor;
 

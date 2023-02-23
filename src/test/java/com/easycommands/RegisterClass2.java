@@ -1,6 +1,7 @@
 package com.easycommands;
 
-import com.easycommands.commands.CMDCommand;
+import com.endmysuffering.easycommands.CMDCommand;
+import com.endmysuffering.easycommands.CMDListener;
 
 public class RegisterClass2 implements CMDListener{
 

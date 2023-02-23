@@ -1,9 +1,7 @@
-package com.easycommands.commands;
+package com.endmysuffering.easycommands;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
-import com.easycommands.CMDListener;
 
 public class CMDMethodCollection {
 

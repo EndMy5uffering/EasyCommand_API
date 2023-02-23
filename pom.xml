@@ -61,7 +61,7 @@
               <addClasspath>false</addClasspath>
             </manifest>
             <manifestEntries>
-              <Built-By>The Ancients</Built-By>
+              <Built-By>A Computer</Built-By>
             </manifestEntries>
           </archive>
         </configuration>
