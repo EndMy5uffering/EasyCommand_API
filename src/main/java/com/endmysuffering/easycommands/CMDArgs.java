@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 public class CMDArgs {
     
@@ -26,6 +27,14 @@ public class CMDArgs {
 
     public CommandSender getSender() {
         return this.sender;
+    }
+
+    public Player getPlayer(){
+        return (Player)sender;
+    }
+
+    public boolean isPlayer(){
+        return sender instanceof Player;
     }
 
     public Command getCmd() {

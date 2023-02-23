@@ -9,6 +9,8 @@ public class CMDMethodCollection {
         boolean call(CMDArgs args) throws CMDCommandException;
     }
 
+    private PlayerCommand playerCommand = null;
+    private ConsoleCommand consoleCommand = null;
     private CMDCallable callable; 
 
     public CMDMethodCollection(CMDFunction func){
@@ -17,6 +19,10 @@ public class CMDMethodCollection {
 
     public CMDMethodCollection(CMDListener listener, Method m) throws CMDCommandException{
         Class<?>[] params = m.getParameterTypes();
+        if(m.isAnnotationPresent(PlayerCommand.class)) 
+            playerCommand = m.getAnnotation(PlayerCommand.class);
+        if(m.isAnnotationPresent(ConsoleCommand.class)) 
+            consoleCommand = m.getAnnotation(ConsoleCommand.class);
         if(m.isAnnotationPresent(CMDCommand.class) && params.length == 1 && params[0] == CMDArgs.class){
             this.callable = (args) -> {
                 try {
@@ -34,5 +40,20 @@ public class CMDMethodCollection {
         return callable.call(args);
     }
 
+    public boolean isConsoleCommand(){
+        return this.consoleCommand != null;
+    }
+
+    public boolean isPlayerCommand(){
+        return this.playerCommand != null;
+    }
+
+    public PlayerCommand getPlayerCommand(){
+        return this.playerCommand;
+    }
+
+    public ConsoleCommand getConsoleCommand(){
+        return this.consoleCommand;
+    }
 
 }
