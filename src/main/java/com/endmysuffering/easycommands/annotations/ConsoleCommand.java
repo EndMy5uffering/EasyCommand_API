@@ -9,5 +9,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface ConsoleCommand {
-    public String message() default "";
+    public String message() default "This command is for console only!";
 }

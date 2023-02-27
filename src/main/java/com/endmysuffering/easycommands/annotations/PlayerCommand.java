@@ -8,5 +8,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface PlayerCommand {
-    public String message() default "This command is for players!";
+    public String message() default "This command is for players only!";
 }
