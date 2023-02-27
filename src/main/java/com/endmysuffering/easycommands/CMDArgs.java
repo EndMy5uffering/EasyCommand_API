@@ -1,6 +1,7 @@
 package com.endmysuffering.easycommands;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ public class CMDArgs {
     private String str;
     private String[] args;
     private Map<String, String> wildCards;
+    private Map<String, Object> objectCollection = new HashMap<>();
     private interface AlertFunc{ public void call(String wildCard); }
 
     public CMDArgs(CommandSender sender, Command cmd, String str, String[] args, Map<String,String> wildCards) {
@@ -99,6 +101,16 @@ public class CMDArgs {
             if(!hasWildCard(name)) res.add(name);
         }
         return res.toArray(new String[0]);
+    }
+
+    public void put(String key, Object value){
+        this.objectCollection.put(key, value);
+    }
+
+    public <T> T getObject(Class<T> clazz, String key){
+        Object result = this.objectCollection.get(key);
+        if(result == null || !clazz.isInstance(result)) return null;
+        return clazz.cast(result);
     }
 
     public int getWildCardInt(String name){

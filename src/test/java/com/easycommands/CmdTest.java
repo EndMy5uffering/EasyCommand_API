@@ -3,14 +3,8 @@ package com.easycommands;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Map;
 
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.junit.Test;
 
 import com.endmysuffering.easycommands.CMDCommandException;
@@ -59,7 +53,7 @@ public class CmdTest {
         m.register("cmd arg1", (a)-> { return true; });
 
         try {
-            List<CMDStruct> structs = getCMDStructs("cmd", m);
+            List<CMDStruct> structs = TestUtils.getCMDStructs("cmd", m);
             assertTrue("Function was not added for simple command /cmd" ,structs.get(0).getFunc() != null);
         } catch (CMDCommandException e1) {
             assert(false);
@@ -74,7 +68,7 @@ public class CmdTest {
         player.permissions.add(DEFAULTPERM);
 
         try {
-            assertTrue("Call of base command returned false!", makeCall(m, player, null, "cmd", new String[0]));
+            assertTrue("Call of base command returned false!", TestUtils.makeCall(m, player, null, "cmd", new String[0]));
         } catch (MissingPermissionsException | CMDCommandException e) {
             assertTrue("Error while calling: " + e.getMessage(), false);
         }
@@ -94,7 +88,7 @@ public class CmdTest {
         player.permissions.add(DEFAULTPERM);
 
         try {
-            assertTrue("Call of base command returned false!", makeCall(m, player, null, "cmd", new String[]{"a" , "b", "c", "d", "e"}));
+            assertTrue("Call of base command returned false!", TestUtils.makeCall(m, player, null, "cmd", new String[]{"a" , "b", "c", "d", "e"}));
         } catch (MissingPermissionsException | CMDCommandException e) {
             assertTrue("Error while calling: " + e.getMessage(), false);
         }
@@ -141,7 +135,7 @@ public class CmdTest {
         player.permissions.add(DEFAULTPERM);
 
         try {
-            makeCall(m, player, null, "cmd", new String[]{"arg3", "arg1", "permlocked"});
+            TestUtils.makeCall(m, player, null, "cmd", new String[]{"arg3", "arg1", "permlocked"});
             assertTrue("Expected exception got none!", false);
         } catch (MissingPermissionsException | CMDCommandException e) {
             assertTrue("Expected missing permissions error got: " + e.getClass().getSimpleName() + ": " + e.getMessage(), e instanceof MissingPermissionsException);
@@ -150,7 +144,7 @@ public class CmdTest {
         player.permissions.add(TESTPERM);
 
         try {
-            assertTrue("Call of permission locked command expected to return true got false", makeCall(m, player, null, "cmd", new String[]{"arg3", "arg1", "permlocked"}));
+            assertTrue("Call of permission locked command expected to return true got false", TestUtils.makeCall(m, player, null, "cmd", new String[]{"arg3", "arg1", "permlocked"}));
         } catch (MissingPermissionsException | CMDCommandException e) {
             assertTrue("No error expeced, got: " + e.getClass().getSimpleName() + ": " + e.getMessage(), false);
         }
@@ -166,13 +160,13 @@ public class CmdTest {
         assertFalse("Registration of 4th class should have faild. Class contains invalid functions!", classRegManager.register(new RegisterClass4()));
 
         try {
-            assertTrue("Faild to execute command for registered class", makeCall(classRegManager, player, null, "functest", new String[]{"valid"}));
+            assertTrue("Faild to execute command for registered class", TestUtils.makeCall(classRegManager, player, null, "functest", new String[]{"valid"}));
         } catch (MissingPermissionsException | CMDCommandException e) {
             assertTrue(e.getMessage(), false);
         }
 
         try {
-            makeCall(classRegManager, player, null, "functest", new String[]{"valid2"});
+            TestUtils.makeCall(classRegManager, player, null, "functest", new String[]{"valid2"});
             assertTrue("Player was able to access function with permission restriction", false);
         } catch (MissingPermissionsException e) {
             assertTrue(true);
@@ -182,7 +176,7 @@ public class CmdTest {
 
         player.permissions.add("functions.func4");
         try {
-            assertTrue("Player was unable to access function with permission", makeCall(classRegManager, player, null, "functest", new String[]{"valid2"}));
+            assertTrue("Player was unable to access function with permission", TestUtils.makeCall(classRegManager, player, null, "functest", new String[]{"valid2"}));
         } catch (MissingPermissionsException e) {
             assertTrue(false);
         } catch (CMDCommandException e) {
@@ -241,88 +235,6 @@ public class CmdTest {
 
     private void assertRegister(String cmd, CMDManager m){
         assertTrue("Could not register command: " + cmd, m.register(cmd, (a)-> { return true; }));
-    }
-
-    private Method getCallMethod(){
-        try {
-            Method call = CMDManager.class.getDeclaredMethod("call", CommandSender.class , Command.class , String.class , String[].class );
-            call.setAccessible(true);
-            return call;
-        } catch (NoSuchMethodException e) {
-            assertTrue("No method 'call' found", false);
-        } catch (SecurityException e) {
-            assertTrue("Could not access the call function", false);
-        }
-        return null;
-    }
-
-    private boolean makeCall(CMDManager m, CommandSender sender, Command cmd, String lable, String[] args) throws MissingPermissionsException, CMDCommandException{
-        try {
-            Method call = getCallMethod();
-            if(call == null) {
-                assertTrue("Call was null!", false);
-                return false;
-            }
-            call.setAccessible(true);
-            return (boolean) call.invoke(m, sender, cmd, lable, args);
-        } catch(InvocationTargetException e){
-            if(e.getTargetException() instanceof MissingPermissionsException)
-                throw (MissingPermissionsException)e.getTargetException();
-            if(e.getTargetException() instanceof CMDCommandException)
-                throw (CMDCommandException)e.getTargetException();
-            assertTrue("Error in call function! Message: " + e.getTargetException().getMessage(), false);
-            return false;
-        }catch (IllegalAccessException | IllegalArgumentException e) {
-            assertTrue("Could not access call method: " + e.getClass().getName(), false);
-            return false;
-        }
-    }
-
-
-    private List<CMDStruct> getCMDStructs(String path, CMDManager m) throws CMDCommandException {
-        try {
-            Method preParse = m.getClass().getDeclaredMethod("preParse", String.class);
-            preParse.setAccessible(true);
-            String[] parts = (String[]) preParse.invoke(m, path);
-
-            Field f = m.getClass().getDeclaredField("rootsToCMDS");
-            f.setAccessible(true);
-
-            Object pathlist = f.get(m);
-            Map<String, CMDStruct> paths = (Map<String, CMDStruct>)pathlist;
-
-            return paths.get(parts[0]).getPath(parts);
-        }catch(CMDCommandException e){
-            throw e;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private Object getField(Object instance, String fname) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException{
-        Field P0FAliases = instance.getClass().getDeclaredField("aliases");
-        P0FAliases.setAccessible(true);
-        return P0FAliases.get(instance);
-    }
-
-    private Method getFirstMethodWithName(Class<?> clazz, String name){
-        for(Method m : clazz.getDeclaredMethods()){
-            if(m.getName().equals(name)){
-                return m;
-            }
-        }
-        return null;
-    }
-
-    private double getExecutionTime(Method method, Object instance, Object... params){
-        try {
-            method.setAccessible(true);
-            long start = System.nanoTime();
-            method.invoke(instance, params);
-            return (System.nanoTime() - start)/1000.0D;
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            return -1;
-        }
     }
 
 }

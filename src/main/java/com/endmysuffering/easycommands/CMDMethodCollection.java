@@ -1,7 +1,10 @@
 package com.endmysuffering.easycommands;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CMDMethodCollection {
 
@@ -11,7 +14,8 @@ public class CMDMethodCollection {
 
     private PlayerCommand playerCommand = null;
     private ConsoleCommand consoleCommand = null;
-    private CMDCallable callable; 
+    private CMDCallable callable;
+	private List<CMDPair<Annotation, ExecTest>> executionTests = new ArrayList<>(); 
 
     public CMDMethodCollection(CMDFunction func){
         this.callable = (args) -> func.func(args);
@@ -34,6 +38,17 @@ public class CMDMethodCollection {
         }else{
             throw new CMDCommandException("Invalid method! " + m.getName());
         }
+    }
+
+    public boolean executionTest(CMDArgs args){
+		for(CMDPair<Annotation, ExecTest> test : this.executionTests){
+			if(!test.getSecound().test(args, test.getFirst())) return false;
+		}
+		return true;
+	}
+
+    public void setGuardTests(List<CMDPair<Annotation, ExecTest>> tests){
+        this.executionTests = tests;
     }
 
     public boolean call(CMDArgs args) throws CMDCommandException {

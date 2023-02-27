@@ -28,6 +28,7 @@ public class CMDManager implements TabExecutor{
 
 	private Map<String, CMDStruct> rootsToCMDS = new HashMap<>();
 	private Map<String, String> aliasesToRoots = new HashMap<>();
+	private Map<Class<? extends Annotation>, ExecTest> GuardTests = new HashMap<>();
 	
 	private String firstLabel = "[/]+[a-zA-Z0-9]*";
 	private MissingPermissionHandle missingPermsHandle = (err) -> { 
@@ -76,47 +77,54 @@ public class CMDManager implements TabExecutor{
 		Method[] methods = listener.getClass().getMethods();
 
 		for(Method m : methods){
-			if(m.isAnnotationPresent(CMDCommand.class)){
-				CMDCommand commandAnnotation = m.getAnnotation(CMDCommand.class);
+			if(!m.isAnnotationPresent(CMDCommand.class)) continue;
+			CMDCommand commandAnnotation = m.getAnnotation(CMDCommand.class);
 
-				Annotation[] annotations = m.getAnnotations();
-				String command = commandAnnotation.cmd();
-				String[] parts = preParse(command);
+			Annotation[] annotations = m.getAnnotations();
+			String command = commandAnnotation.cmd();
+			String[] parts = preParse(command);
 
-				try {
-					rootsToCMDS.get(parts[0]).addCMD(parts, new CMDMethodCollection(listener, m));
-				} catch (CMDCommandException e) {
-					if(this.plugin != null) plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
-					return false;
+			List<CMDPair<Annotation, ExecTest>> ExecTestList = new ArrayList<>();
+			for(Class<? extends Annotation> clazz : this.GuardTests.keySet()){
+				if(m.isAnnotationPresent(clazz)) 
+					ExecTestList.add(new CMDPair<Annotation,ExecTest>(m.getAnnotation(clazz), GuardTests.get(clazz)));
+			}
+			
+			try {
+				CMDMethodCollection cmdCollection = new CMDMethodCollection(listener, m);
+				cmdCollection.setGuardTests(ExecTestList);
+				rootsToCMDS.get(parts[0]).addCMD(parts, cmdCollection);
+			} catch (CMDCommandException e) {
+				if(this.plugin != null) plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
+				return false;
+			}
+
+			if(m.isAnnotationPresent(Permission.class)){
+				List<String[]> permsList = new ArrayList<>();
+				for(Annotation a : annotations){
+					if(a instanceof Permission perms){
+						permsList.add(perms.Permissions());
+					}
 				}
 
-				if(m.isAnnotationPresent(Permission.class)){
-					List<String[]> permsList = new ArrayList<>();
-					for(Annotation a : annotations){
-						if(a instanceof Permission perms){
-							permsList.add(perms.Permissions());
-						}
-					}
+				String[][] permArray = new String[permsList.size()][];
 
-					String[][] permArray = new String[permsList.size()][];
-
-					for(int i = 0; i < permsList.size(); ++i){
-						permArray[i] = permsList.get(i);
-					}
-
-					PermissionGroup PermGroup = new PermissionGroup(Type.CONJUNCTIVE, permArray);
-					registerPermissionCheck(command, (player) -> {
-						System.out.println("Checking perms: " + PermGroup.hasPermission(player));
-						return PermGroup.hasPermission(player);
-					});
-
+				for(int i = 0; i < permsList.size(); ++i){
+					permArray[i] = permsList.get(i);
 				}
 
-
-
+				PermissionGroup PermGroup = new PermissionGroup(Type.CONJUNCTIVE, permArray);
+				registerPermissionCheck(command, (player) -> {
+					System.out.println("Checking perms: " + PermGroup.hasPermission(player));
+					return PermGroup.hasPermission(player);
+				});
 			}
 		}
 		return true;
+	}
+
+	public void registerGuard(Class<? extends Annotation> clazz, ExecTest test){
+		this.GuardTests.put(clazz, test);
 	}
 
 	public void registerAliase(String cmdRoot, String aliases){
@@ -159,46 +167,47 @@ public class CMDManager implements TabExecutor{
 	    tempArr[0] = label;
 	    System.arraycopy(args, 0, tempArr, 1, args.length);
 
-		if(rootsToCMDS.containsKey(label) || aliasesToRoots.containsKey(label)) {
-	    	try {
-				CMDStruct root = rootsToCMDS.get(label);
-				if(root == null) {
-					root = rootsToCMDS.get(aliasesToRoots.get(label));
-					tempArr[0] = aliasesToRoots.get(label);
-				}
-				if(root == null) return true;
-				CMDPair<CMDStruct, Map<String, String>> pair = root.search(tempArr);
+		if(!(rootsToCMDS.containsKey(label) || aliasesToRoots.containsKey(label))) return true;
+		try {
+			CMDStruct root = rootsToCMDS.get(label);
+			if(root == null) {
+				root = rootsToCMDS.get(aliasesToRoots.get(label));
+				tempArr[0] = aliasesToRoots.get(label);
+			}
+			if(root == null) return true;
+			CMDPair<CMDStruct, Map<String, String>> pair = root.search(tempArr);
 
-				CMDStruct struct = pair.getFirst();
-				Map<String, String> wildCards = pair.getSecound();
-				
-				if(struct != null && struct.getFunc() != null) {
-					if(sender instanceof Player player){
-						if(struct.getFunc().isConsoleCommand() && !struct.getFunc().isPlayerCommand()){
-							if(struct.getFunc().getConsoleCommand().message() != "")
-								player.sendMessage(struct.getFunc().getConsoleCommand().message());							
-							return true;
-						}
-						CMDStruct faildStruct = root.checkPermission(tempArr, player);
-						if(faildStruct != null)
-							throw new MissingPermissionsException(player, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
-					}else if(struct.getFunc().isPlayerCommand() && !struct.getFunc().isConsoleCommand()){
-						sender.sendMessage(struct.getFunc().getPlayerCommand().message());
-						return true;
-					}
-					return struct.getFunc().call(new CMDArgs(sender, cmd, label, args, wildCards));
-				}else{
-					sender.sendMessage(ChatColor.RED + "Command: " + ChatColor.AQUA + String.join(" ", tempArr) + ChatColor.RED + " not found!");
-				}
-			} catch (CMDCommandException e) {
-				if(e.getErrorReason().equals(CMDCommandException.ErrorReason.COMMAND_NOT_FOUND)){
-					sender.sendMessage(ChatColor.RED + "Command: " + ChatColor.AQUA + String.join(" ", tempArr) + ChatColor.RED + " not found!");
+			CMDStruct struct = pair.getFirst();
+			Map<String, String> wildCards = pair.getSecound();
+			CMDArgs cmdArgs = new CMDArgs(sender, cmd, label, args, wildCards);
+			if(struct == null || struct.getFunc() == null) {
+				sender.sendMessage(ChatColor.RED + "Command: " + ChatColor.AQUA + String.join(" ", tempArr) + ChatColor.RED + " not found!");
+				return true;
+			}
+
+			if(!struct.getFunc().executionTest(cmdArgs)) return true;
+
+			if(sender instanceof Player player){
+				if(struct.getFunc().isConsoleCommand() && !struct.getFunc().isPlayerCommand()){
+					if(struct.getFunc().getConsoleCommand().message() != "")
+						player.sendMessage(struct.getFunc().getConsoleCommand().message());							
 					return true;
 				}
-				throw e;
+				CMDStruct faildStruct = root.checkPermission(tempArr, player);
+				if(faildStruct != null)
+					throw new MissingPermissionsException(player, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
+			}else if(struct.getFunc().isPlayerCommand() && !struct.getFunc().isConsoleCommand()){
+				sender.sendMessage(struct.getFunc().getPlayerCommand().message());
+				return true;
 			}
-	    }
-	    return true;
+			return struct.getFunc().call(cmdArgs);
+		} catch (CMDCommandException e) {
+			if(e.getErrorReason().equals(CMDCommandException.ErrorReason.COMMAND_NOT_FOUND)){
+				sender.sendMessage(ChatColor.RED + "Command: " + ChatColor.AQUA + String.join(" ", tempArr) + ChatColor.RED + " not found!");
+				return true;
+			}
+			throw e;
+		}
 	}
 	
 	private List<String> tabComplete(CommandSender sender, Command cmd, String label, String[] args){
