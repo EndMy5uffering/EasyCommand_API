@@ -18,6 +18,10 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.endmysuffering.easycommands.PermissionGroup.Type;
+import com.endmysuffering.easycommands.annotations.CMDCommand;
+import com.endmysuffering.easycommands.annotations.ConsoleCommand;
+import com.endmysuffering.easycommands.annotations.Permission;
+import com.endmysuffering.easycommands.annotations.PlayerCommand;
 
 import net.md_5.bungee.api.ChatColor;
 
@@ -37,9 +41,29 @@ public class CMDManager implements TabExecutor{
 	
 	public CMDManager(Plugin p) {
 		this.plugin = p;
+		this.registerGuard(PlayerCommand.class, (args, annotation) -> {
+			PlayerCommand pcmd = CMDArgs.safeCast(PlayerCommand.class, annotation);
+			if(!(args.getSender() instanceof Player)){
+				if(pcmd.message() != null && pcmd.message() != "") 
+					args.getSender().sendMessage(pcmd.message());
+				return false;
+			}
+			return true;
+		});
+		this.registerGuard(ConsoleCommand.class, (args, annotation) -> {
+			ConsoleCommand ccmd = CMDArgs.safeCast(ConsoleCommand.class, annotation);
+			if(args.getSender() instanceof Player){
+				if(ccmd.message() != null && ccmd.message() != "") 
+					args.getSender().sendMessage(ccmd.message());
+				return false;
+			}
+			return true;
+		});
 	}
 
-	public CMDManager(){}
+	public CMDManager() {
+		this(null);
+	}
 	
 	private String[] preParse(String cmd) {
 		String[] parts = cmd.split(" ");
@@ -188,17 +212,9 @@ public class CMDManager implements TabExecutor{
 			if(!struct.getFunc().executionTest(cmdArgs)) return true;
 
 			if(sender instanceof Player player){
-				if(struct.getFunc().isConsoleCommand() && !struct.getFunc().isPlayerCommand()){
-					if(struct.getFunc().getConsoleCommand().message() != "")
-						player.sendMessage(struct.getFunc().getConsoleCommand().message());							
-					return true;
-				}
 				CMDStruct faildStruct = root.checkPermission(tempArr, player);
 				if(faildStruct != null)
 					throw new MissingPermissionsException(player, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
-			}else if(struct.getFunc().isPlayerCommand() && !struct.getFunc().isConsoleCommand()){
-				sender.sendMessage(struct.getFunc().getPlayerCommand().message());
-				return true;
 			}
 			return struct.getFunc().call(cmdArgs);
 		} catch (CMDCommandException e) {

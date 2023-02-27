@@ -1,4 +1,4 @@
-package com.endmysuffering.easycommands;
+package com.endmysuffering.easycommands.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface CMDCommand {
-    public String cmd();
+public @interface PlayerCommand {
+    public String message() default "This command is for players!";
 }

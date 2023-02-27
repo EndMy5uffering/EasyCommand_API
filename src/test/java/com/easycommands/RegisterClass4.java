@@ -1,8 +1,8 @@
 package com.easycommands;
 
 import com.endmysuffering.easycommands.CMDArgs;
-import com.endmysuffering.easycommands.CMDCommand;
 import com.endmysuffering.easycommands.CMDListener;
+import com.endmysuffering.easycommands.annotations.CMDCommand;
 
 public class RegisterClass4 implements CMDListener{
 

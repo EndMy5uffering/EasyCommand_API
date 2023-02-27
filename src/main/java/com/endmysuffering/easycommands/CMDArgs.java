@@ -113,6 +113,11 @@ public class CMDArgs {
         return clazz.cast(result);
     }
 
+    public static <T> T safeCast(Class<T> clazz, Object obj){
+        if(obj == null || !clazz.isInstance(obj)) return null;
+        return clazz.cast(obj);
+    }
+
     public int getWildCardInt(String name){
         return Integer.parseInt(this.wildCards.get(name));
     }

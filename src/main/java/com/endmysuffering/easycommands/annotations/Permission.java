@@ -1,4 +1,4 @@
-package com.endmysuffering.easycommands;
+package com.endmysuffering.easycommands.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;
