@@ -179,15 +179,16 @@ public class CMDNode {
 	}
 
 	private void getCommands(List<String> list, String parentCMD){
+		String pref = parentCMD != "" ? parentCMD + " " : parentCMD;
 		if(this.func != null){
-			list.add(parentCMD + this.part);
+			list.add(pref + this.part);
 			return;
 		}
 		for(String part: this.next.keySet()){
-			this.next.get(part).getCommands(list, parentCMD + " " + this.part);
+			this.next.get(part).getCommands(list, pref + this.part);
 		}
 		if(this.nextWildCard != null){
-			this.nextWildCard.getCommands(list, parentCMD + " " + this.part);
+			this.nextWildCard.getCommands(list, pref + this.part);
 		}
 	}
 
