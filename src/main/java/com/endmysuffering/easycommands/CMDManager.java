@@ -30,7 +30,7 @@ public class CMDManager implements TabExecutor{
 	private Plugin plugin = null;
 	private boolean suggestWildcardNames = false;
 
-	private Map<String, CMDStruct> rootsToCMDS = new HashMap<>();
+	private Map<String, CMDNode> rootsToCMDS = new HashMap<>();
 	private Map<String, String> aliasesToRoots = new HashMap<>();
 	private Map<Class<? extends Annotation>, ExecTest> GuardTests = new HashMap<>();
 	
@@ -76,7 +76,7 @@ public class CMDManager implements TabExecutor{
 				plugin.getLogger().log(Level.WARNING, "Could not register executor for: " + cmd);
 		}
 		if(!rootsToCMDS.containsKey(parts[0])) {
-			rootsToCMDS.put(parts[0], new CMDStruct(parts[0], null));
+			rootsToCMDS.put(parts[0], new CMDNode(parts[0], null));
 		}
 		return parts;
 	}
@@ -139,7 +139,6 @@ public class CMDManager implements TabExecutor{
 
 				PermissionGroup PermGroup = new PermissionGroup(Type.CONJUNCTIVE, permArray);
 				registerPermissionCheck(command, (player) -> {
-					System.out.println("Checking perms: " + PermGroup.hasPermission(player));
 					return PermGroup.hasPermission(player);
 				});
 			}
@@ -184,6 +183,14 @@ public class CMDManager implements TabExecutor{
 	public void setMissingPermissionHandle(MissingPermissionHandle mph){
 		this.missingPermsHandle = mph;
 	}
+
+	public List<String> getCommands(){
+		List<String> result = new ArrayList<String>();
+		for(String r : this.rootsToCMDS.keySet()){
+			result.addAll(this.rootsToCMDS.get(r).getCommandList());
+		}
+		return result;
+	}
 	
 	private boolean call(CommandSender sender, Command cmd, String label, String[] args) throws MissingPermissionsException, CMDCommandException {
 		label = preParseLabel(label);
@@ -193,15 +200,15 @@ public class CMDManager implements TabExecutor{
 
 		if(!(rootsToCMDS.containsKey(label) || aliasesToRoots.containsKey(label))) return true;
 		try {
-			CMDStruct root = rootsToCMDS.get(label);
+			CMDNode root = rootsToCMDS.get(label);
 			if(root == null) {
 				root = rootsToCMDS.get(aliasesToRoots.get(label));
 				tempArr[0] = aliasesToRoots.get(label);
 			}
 			if(root == null) return true;
-			CMDPair<CMDStruct, Map<String, String>> pair = root.search(tempArr);
+			CMDPair<CMDNode, Map<String, String>> pair = root.search(tempArr);
 
-			CMDStruct struct = pair.getFirst();
+			CMDNode struct = pair.getFirst();
 			Map<String, String> wildCards = pair.getSecound();
 			CMDArgs cmdArgs = new CMDArgs(sender, cmd, label, args, wildCards);
 			if(struct == null || struct.getFunc() == null) {
@@ -212,7 +219,7 @@ public class CMDManager implements TabExecutor{
 			if(!struct.getFunc().executionTest(cmdArgs)) return true;
 
 			if(sender instanceof Player player){
-				CMDStruct faildStruct = root.checkPermission(tempArr, player);
+				CMDNode faildStruct = root.checkPermission(tempArr, player);
 				if(faildStruct != null)
 					throw new MissingPermissionsException(player, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
 			}

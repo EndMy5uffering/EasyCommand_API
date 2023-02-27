@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import com.endmysuffering.easycommands.CMDCommandException;
 import com.endmysuffering.easycommands.CMDManager;
-import com.endmysuffering.easycommands.CMDStruct;
+import com.endmysuffering.easycommands.CMDNode;
 import com.endmysuffering.easycommands.MissingPermissionsException;
 
 public class CmdTest {
@@ -53,7 +53,7 @@ public class CmdTest {
         m.register("cmd arg1", (a)-> { return true; });
 
         try {
-            List<CMDStruct> structs = TestUtils.getCMDStructs("cmd", m);
+            List<CMDNode> structs = TestUtils.getCMDStructs("cmd", m);
             assertTrue("Function was not added for simple command /cmd" ,structs.get(0).getFunc() != null);
         } catch (CMDCommandException e1) {
             assert(false);

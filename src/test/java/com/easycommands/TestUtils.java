@@ -13,7 +13,7 @@ import org.bukkit.command.CommandSender;
 
 import com.endmysuffering.easycommands.CMDCommandException;
 import com.endmysuffering.easycommands.CMDManager;
-import com.endmysuffering.easycommands.CMDStruct;
+import com.endmysuffering.easycommands.CMDNode;
 import com.endmysuffering.easycommands.MissingPermissionsException;
 
 public class TestUtils {
@@ -53,7 +53,7 @@ public class TestUtils {
     }
 
 
-    public static List<CMDStruct> getCMDStructs(String path, CMDManager m) throws CMDCommandException {
+    public static List<CMDNode> getCMDStructs(String path, CMDManager m) throws CMDCommandException {
         try {
             Method preParse = m.getClass().getDeclaredMethod("preParse", String.class);
             preParse.setAccessible(true);
@@ -63,7 +63,7 @@ public class TestUtils {
             f.setAccessible(true);
 
             Object pathlist = f.get(m);
-            Map<String, CMDStruct> paths = (Map<String, CMDStruct>)pathlist;
+            Map<String, CMDNode> paths = (Map<String, CMDNode>)pathlist;
 
             return paths.get(parts[0]).getPath(parts);
         }catch(CMDCommandException e){

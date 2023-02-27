@@ -15,7 +15,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-public class CMDStruct {
+public class CMDNode {
 
 	private final String wildCardPattern = "<([a-zA-Z0-9]+|\\.\\.\\.)>";
 	private final String varargPattern = "<(\\.\\.\\.)>";
@@ -23,30 +23,30 @@ public class CMDStruct {
 	private final String part;
 	private final boolean isWildCard, isVarArg;
 	private CMDMethodCollection func;
-	private Map<String, CMDStruct> next = new HashMap<>();
+	private Map<String, CMDNode> next = new HashMap<>();
 	private CMDTabLookup lookup;
 	private PermissionCheck permissionCheck;
 	private MissingPermissionHandle missingPermissinHandle = null;
-	private CMDStruct nextWildCard = null;
+	private CMDNode nextWildCard = null;
 		
-	public CMDStruct(String part) {
+	public CMDNode(String part) {
 		this(part, null);
 	}
 	
-	public CMDStruct(String part, CMDMethodCollection func) {
+	public CMDNode(String part, CMDMethodCollection func) {
 		this.isWildCard = Pattern.matches(wildCardPattern, part);
 		this.isVarArg = Pattern.matches(varargPattern, part);
 		this.part = part;
 		this.func = func;
 	}
 	
-	public CMDPair<CMDStruct, Map<String, String>> search(String[] cmd) throws CMDCommandException {
+	public CMDPair<CMDNode, Map<String, String>> search(String[] cmd) throws CMDCommandException {
 		return this.search(cmd, new HashMap<>(), 0);
 	}
 	
-	private CMDPair<CMDStruct, Map<String, String>> search(String[] parts, Map<String,String> wildCards, int c) throws CMDCommandException {
+	private CMDPair<CMDNode, Map<String, String>> search(String[] parts, Map<String,String> wildCards, int c) throws CMDCommandException {
 		if(this.isVarArg){
-			return new CMDPair<CMDStruct,Map<String,String>>(this, wildCards);
+			return new CMDPair<CMDNode,Map<String,String>>(this, wildCards);
 		}
 		
 		if(!this.isWildCard && !parts[c].equalsIgnoreCase(this.part)) 
@@ -64,17 +64,17 @@ public class CMDStruct {
 				throw new CMDCommandException("Pattern mismatch while searching! No part in the command matches: \""+ parts[c+1] + "\" in command: " + String.join(" ", parts), ErrorReason.COMMAND_NOT_FOUND);
 			}
 		}
-		return new CMDPair<CMDStruct,Map<String,String>>(this, wildCards);
+		return new CMDPair<CMDNode,Map<String,String>>(this, wildCards);
 	}
 	
 	public List<String> getTabList(String[] parts, String partial, CommandSender sender, Command cmd, String str, String[] args, boolean includeWildcards){
 		try {
-			CMDPair<CMDStruct, Map<String, String>> res = search(parts);
-			CMDStruct struct = res.getFirst();
+			CMDPair<CMDNode, Map<String, String>> res = search(parts);
+			CMDNode struct = res.getFirst();
 			Map<String, String> wildCards = res.getSecound();
 			if(struct != null) {
 				Set<String> output = new HashSet<>();
-				for(CMDStruct element : struct.next.values()) {
+				for(CMDNode element : struct.next.values()) {
 					if(element.part.contains(partial))
 						output.add(element.part);
 				}
@@ -93,11 +93,11 @@ public class CMDStruct {
 		return new ArrayList<>();
 	}
 	
-	public List<CMDStruct> createPath(String[] parts) throws CMDCommandException{
-		return createPath(parts, 1, new ArrayList<CMDStruct>());
+	public List<CMDNode> createPath(String[] parts) throws CMDCommandException{
+		return createPath(parts, 1, new ArrayList<CMDNode>());
 	}
 
-	private List<CMDStruct> createPath(String[] parts, int c, List<CMDStruct> list) throws CMDCommandException{
+	private List<CMDNode> createPath(String[] parts, int c, List<CMDNode> list) throws CMDCommandException{
 		if(this.isVarArg && c <= parts.length -1){
 			throw new CMDCommandException("Can not get path after variable argument! For command: " + String.join(" ", parts), ErrorReason.OTHER);
 		}
@@ -112,20 +112,20 @@ public class CMDStruct {
 		}else if(isNextWildCard && this.nextWildCard != null && this.nextWildCard.part.equals(parts[c])){
 			return this.nextWildCard.createPath(parts, ++c, list);
 		}else if(isNextWildCard && this.nextWildCard == null){
-			this.nextWildCard = new CMDStruct(parts[c], null);
+			this.nextWildCard = new CMDNode(parts[c], null);
 			return this.nextWildCard.createPath(parts, ++c, list);
 		}
 		if(!this.hasNext(parts[c])) {
-			this.next.put(parts[c], new CMDStruct(parts[c], null));
+			this.next.put(parts[c], new CMDNode(parts[c], null));
 		}
 		return this.getNext(parts[c]).createPath(parts, ++c, list);
 	}
 
-	public List<CMDStruct> getPath(String[] parts) throws CMDCommandException{
-		return getPath(parts, 1, new ArrayList<CMDStruct>());
+	public List<CMDNode> getPath(String[] parts) throws CMDCommandException{
+		return getPath(parts, 1, new ArrayList<CMDNode>());
 	}
 
-	private List<CMDStruct> getPath(String[] parts, int c, List<CMDStruct> list) throws CMDCommandException{
+	private List<CMDNode> getPath(String[] parts, int c, List<CMDNode> list) throws CMDCommandException{
 		if(this.isVarArg && c <= parts.length -1){
 			throw new CMDCommandException("Can not get path after variable argument! For command: " + String.join(" ", parts), ErrorReason.OTHER);
 		}
@@ -146,30 +146,49 @@ public class CMDStruct {
  
 
 	public void addCMD(String[] parts, CMDMethodCollection func) throws CMDCommandException {
-		List<CMDStruct> path = createPath(parts);
+		List<CMDNode> path = createPath(parts);
 		path.get(path.size()-1).setFunc(func);
 	}
 
 	public void addCMDLookup(String[] parts, CMDTabLookup tablookup) throws CMDCommandException {
-		List<CMDStruct> path = createPath(parts);
+		List<CMDNode> path = createPath(parts);
 		path.get(path.size()-1).setLookup(tablookup);
 	}
 	
 	public void addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle) throws CMDCommandException {
-		List<CMDStruct> path = createPath(parts);
-		CMDStruct cstruct = path.get(path.size()-1);
+		List<CMDNode> path = createPath(parts);
+		CMDNode cstruct = path.get(path.size()-1);
 		cstruct.setPermissionCheck(permissionCheck);
 		cstruct.setMissingPermissinHandle(handle);
 	}
 
-	public CMDStruct checkPermission(String[] parts, Player p) throws CMDCommandException{
-		List<CMDStruct> path = getPath(parts);
+	public CMDNode checkPermission(String[] parts, Player p) throws CMDCommandException{
+		List<CMDNode> path = getPath(parts);
 		boolean hasPermission = true;
-		for(CMDStruct s : path){
+		for(CMDNode s : path){
 			hasPermission &= s.checkPermission(p);
 			if(!hasPermission) return s;
 		}
 		return null;
+	}
+
+	public List<String> getCommandList(){
+		List<String> result = new ArrayList<String>();
+		this.getCommands(result, "");
+		return result;
+	}
+
+	private void getCommands(List<String> list, String parentCMD){
+		if(this.func != null){
+			list.add(parentCMD + this.part);
+			return;
+		}
+		for(String part: this.next.keySet()){
+			this.next.get(part).getCommands(list, parentCMD + " " + this.part);
+		}
+		if(this.nextWildCard != null){
+			this.nextWildCard.getCommands(list, parentCMD + " " + this.part);
+		}
 	}
 
 	private boolean checkPermission(Player p){
@@ -192,7 +211,7 @@ public class CMDStruct {
 		return next.containsKey(part);
 	}
 	
-	public CMDStruct getNext(String part) {
+	public CMDNode getNext(String part) {
 		return next.get(part);
 	}
 	
@@ -216,11 +235,11 @@ public class CMDStruct {
 		this.missingPermissinHandle = missingPermissinHandle;
 	}
 
-	public CMDStruct getNextWildCard() {
+	public CMDNode getNextWildCard() {
 		return nextWildCard;
 	}
 
-	public void setNextWildCard(CMDStruct nextWildCard) {
+	public void setNextWildCard(CMDNode nextWildCard) {
 		this.nextWildCard = nextWildCard;
 	}
 
