@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -57,6 +58,22 @@ public class CMDArgs {
 
     public boolean hasWildCard(String name){
         return this.wildCards.get(name) != null && this.wildCards.get(name) != "";
+    }
+
+    public void sendMessage(String msg){
+        this.getSender().sendMessage(msg);
+    }
+
+    public void sendError(String msg){
+        this.getSender().sendMessage(ChatColor.RED + msg);
+    }
+
+    public void sendSuccess(String msg){
+        this.getSender().sendMessage(ChatColor.GREEN + msg);
+    }
+
+    public void sendWarning(String msg){
+        this.getSender().sendMessage(ChatColor.YELLOW + msg);
     }
 
     /**
