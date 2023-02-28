@@ -52,6 +52,17 @@ public class TestUtils {
         }
     }
 
+    public static boolean makeCall(CMDManager m, CommandSender sender, String cmd) {
+        String[] split = cmd.split(" ");
+        String[] args = new String[split.length - 1];
+        System.arraycopy(split, 1, args, 0, split.length-1);
+        try {
+            return makeCall(m, sender, null, split[0].replace("/", ""), args);
+        } catch (MissingPermissionsException | CMDCommandException e) {
+            return false;
+        }
+    }
+
 
     public static List<CMDNode> getCMDStructs(String path, CMDManager m) throws CMDCommandException {
         try {

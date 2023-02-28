@@ -22,6 +22,7 @@ import com.endmysuffering.easycommands.annotations.CMDCommand;
 import com.endmysuffering.easycommands.annotations.ConsoleCommand;
 import com.endmysuffering.easycommands.annotations.Permission;
 import com.endmysuffering.easycommands.annotations.PlayerCommand;
+import com.endmysuffering.easycommands.typechecks.TypeChecks;
 
 import net.md_5.bungee.api.ChatColor;
 
@@ -97,7 +98,7 @@ public class CMDManager implements TabExecutor{
 	}
 
 	public boolean register(CMDListener listener){
-
+		CMDMethodCollection cmdCollection = null;
 		Method[] methods = listener.getClass().getMethods();
 
 		for(Method m : methods){
@@ -113,9 +114,9 @@ public class CMDManager implements TabExecutor{
 				if(m.isAnnotationPresent(clazz)) 
 					ExecTestList.add(new CMDPair<Annotation,ExecTest>(m.getAnnotation(clazz), GuardTests.get(clazz)));
 			}
-			
+		
 			try {
-				CMDMethodCollection cmdCollection = new CMDMethodCollection(listener, m);
+				cmdCollection = new CMDMethodCollection(listener, m);
 				cmdCollection.setGuardTests(ExecTestList);
 				rootsToCMDS.get(parts[0]).addCMD(parts, cmdCollection);
 			} catch (CMDCommandException e) {
@@ -123,25 +124,38 @@ public class CMDManager implements TabExecutor{
 				return false;
 			}
 
-			if(m.isAnnotationPresent(Permission.class)){
-				List<String[]> permsList = new ArrayList<>();
-				for(Annotation a : annotations){
-					if(a instanceof Permission perms){
-						permsList.add(perms.Permissions());
-					}
+			for(Annotation a : annotations){
+				List<CMDPair<String, TypeChecks.TypeCheck>> typeChecks;
+				try {
+					typeChecks = TypeChecks.getTypeChecks(a);
+				} catch (CMDCommandException e) {
+					e.printStackTrace();
+					return false;
 				}
-
-				String[][] permArray = new String[permsList.size()][];
-
-				for(int i = 0; i < permsList.size(); ++i){
-					permArray[i] = permsList.get(i);
+				if(typeChecks == null) continue;
+				for(CMDPair<String,TypeChecks.TypeCheck> pair : typeChecks){
+					cmdCollection.addTypeChecks(pair.getFirst(), new CMDPair<Annotation, TypeChecks.TypeCheck>(a, pair.getSecound()));
 				}
-
-				PermissionGroup PermGroup = new PermissionGroup(Type.CONJUNCTIVE, permArray);
-				registerPermissionCheck(command, (player) -> {
-					return PermGroup.hasPermission(player);
-				});
 			}
+
+			if(!m.isAnnotationPresent(Permission.class)) continue;
+			List<String[]> permsList = new ArrayList<>();
+			for(Annotation a : annotations){
+				if(a instanceof Permission perms){
+					permsList.add(perms.Permissions());
+				}
+			}
+
+			String[][] permArray = new String[permsList.size()][];
+
+			for(int i = 0; i < permsList.size(); ++i){
+				permArray[i] = permsList.get(i);
+			}
+
+			PermissionGroup PermGroup = new PermissionGroup(Type.CONJUNCTIVE, permArray);
+			registerPermissionCheck(command, (player) -> {
+				return PermGroup.hasPermission(player);
+			});
 		}
 		return true;
 	}
@@ -217,6 +231,10 @@ public class CMDManager implements TabExecutor{
 			}
 
 			if(!struct.getFunc().executionTest(cmdArgs)) return true;
+			if(!struct.getFunc().doTypeChecks(cmdArgs)) {
+				cmdArgs.sendError("Some of the provided arguments do not match the required type!");
+				return true;
+			}
 
 			if(sender instanceof Player player){
 				CMDNode faildStruct = root.checkPermission(tempArr, player);

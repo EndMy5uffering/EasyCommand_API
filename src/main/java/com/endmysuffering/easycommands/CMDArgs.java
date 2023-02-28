@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -159,6 +161,10 @@ public class CMDArgs {
     public boolean isWildCardBoolean(String name){
         String value = this.wildCards.get(name).toLowerCase();
         return value.equals("true") || value.equals("false");
+    }
+
+    public Set<String> getWildcards(){
+        return this.wildCards.keySet();
     }
 
 }

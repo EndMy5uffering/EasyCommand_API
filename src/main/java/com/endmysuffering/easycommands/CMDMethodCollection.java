@@ -4,9 +4,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.endmysuffering.easycommands.annotations.CMDCommand;
+import com.endmysuffering.easycommands.typechecks.TypeChecks;
 
 public class CMDMethodCollection {
 
@@ -15,7 +18,8 @@ public class CMDMethodCollection {
     }
 
     private CMDCallable callable;
-	private List<CMDPair<Annotation, ExecTest>> executionTests = new ArrayList<>(); 
+	private List<CMDPair<Annotation, ExecTest>> executionTests = new ArrayList<>();
+    private Map<String, CMDPair<Annotation, TypeChecks.TypeCheck>> wildCardToTypeCheck = new HashMap<>();
 
     public CMDMethodCollection(CMDFunction func){
         this.callable = (args) -> func.func(args);
@@ -43,8 +47,20 @@ public class CMDMethodCollection {
 		return true;
 	}
 
+    public boolean doTypeChecks(CMDArgs args){
+        for(String card : args.getWildcards()){
+            CMDPair<Annotation, TypeChecks.TypeCheck> pair = this.wildCardToTypeCheck.get(card);
+            if(!pair.getSecound().check(args, card, pair.getFirst())) return false;
+        }
+        return true;
+    }
+
     public void setGuardTests(List<CMDPair<Annotation, ExecTest>> tests){
         this.executionTests = tests;
+    }
+
+    public void addTypeChecks(String wildcard, CMDPair<Annotation, TypeChecks.TypeCheck> typecheck) {
+        this.wildCardToTypeCheck.put(wildcard, typecheck);
     }
 
     public boolean call(CMDArgs args) throws CMDCommandException {
