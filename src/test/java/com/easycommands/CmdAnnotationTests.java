@@ -150,4 +150,19 @@ public class CmdAnnotationTests {
         assertTrue("Player message was different", player.messages.get(0).equals(err));
     }
 
+    @Test
+    public void TestTypeCheckEnum2(){
+        CMDManager manager = new CMDManager();
+        TestPlayer player = new TestPlayer();
+        assertTrue("Could not register TypeCheck commands", manager.register(new AnnotationCommands()));
+
+        assertTrue("Could not call command", TestUtils.makeCall(manager, player, "/cmd7 Test1 MOCK2"));
+        assertTrue("Last args was null", player.lastArgs != null);
+        TestEnum b = player.lastArgs.getObject(TestEnum.class, "w1");
+        TestEnum2 b2 = player.lastArgs.getObject(TestEnum2.class, "w2");
+        assertTrue("No Enum object found", b != null && b2 != null);
+        assertTrue("Enum value was not Test1!", b.equals(TestEnum.Test1));
+        assertTrue("Enum value was not MOCK2!", b2.equals(TestEnum2.MOCK2));
+    }
+
 }

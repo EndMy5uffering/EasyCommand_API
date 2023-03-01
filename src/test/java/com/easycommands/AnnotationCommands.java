@@ -59,4 +59,14 @@ public class AnnotationCommands implements CMDListener{
         player.lastArgs = args;
         return true;
     }
+
+    
+    @CMDCommand(cmd = "/cmd7 <w1> <w2>")
+    @EnumMemberCheck(paramNames = "w1", enumClazz = TestEnum.class)
+    @EnumMemberCheck(paramNames = "w2", enumClazz = TestEnum2.class)
+    public boolean multienumFunc1(CMDArgs args){
+        TestPlayer player = (TestPlayer)args.getSender();
+        player.lastArgs = args;
+        return true;
+    }
 }

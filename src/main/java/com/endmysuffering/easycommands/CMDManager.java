@@ -120,12 +120,15 @@ public class CMDManager implements TabExecutor{
 				cmdCollection.setGuardTests(ExecTestList);
 				rootsToCMDS.get(parts[0]).addCMD(parts, cmdCollection);
 			} catch (CMDCommandException e) {
-				if(this.plugin != null) plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
+				if(this.plugin != null) {
+					plugin.getLogger().log(java.util.logging.Level.WARNING, "Error while registering: " + ReflectUtils.getMethodSignature(m));
+					plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
+				}
 				return false;
 			}
 
 			for(Annotation a : annotations){
-				List<CMDPair<String, TypeChecks.TypeCheck>> typeChecks;
+				List<CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>>> typeChecks;
 				try {
 					typeChecks = TypeChecks.getTypeChecks(a);
 				} catch (CMDCommandException e) {
@@ -133,8 +136,12 @@ public class CMDManager implements TabExecutor{
 					return false;
 				}
 				if(typeChecks == null) continue;
-				for(CMDPair<String,TypeChecks.TypeCheck> pair : typeChecks){
-					cmdCollection.addTypeChecks(pair.getFirst(), new CMDPair<Annotation, TypeChecks.TypeCheck>(a, pair.getSecound()));
+				for(CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>> pair : typeChecks){
+					if(pair.getFirst() == null || pair.getSecound() == null || !pair.getSecound().isNotNull()){
+						plugin.getLogger().log(java.util.logging.Level.WARNING, "Error whily getting typechecks for: " + ReflectUtils.getMethodSignature(m));
+						return false;
+					}
+					cmdCollection.addTypeChecks(pair.getFirst(), pair.getSecound());
 				}
 			}
 

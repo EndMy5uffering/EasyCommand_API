@@ -26,4 +26,16 @@ public class CMDPair<K, V> {
         this.secound = secound;
     }
     
+    public boolean isFistNull(){
+        return first != null;
+    }
+
+    public boolean isSecoundNull(){
+        return secound != null;
+    }
+
+    public boolean isNotNull(){
+        return first != null && secound != null;
+    }
+
 }

@@ -50,6 +50,8 @@ public class CMDMethodCollection {
     public boolean doTypeChecks(CMDArgs args){
         for(String card : args.getWildcards()){
             CMDPair<Annotation, TypeChecks.TypeCheck> pair = this.wildCardToTypeCheck.get(card);
+            if(pair == null) continue;
+            if(!pair.isNotNull()) return false;
             if(!pair.getSecound().check(args, card, pair.getFirst())) return false;
         }
         return true;

@@ -29,16 +29,17 @@ public class TypeChecks {
         public boolean check(CMDArgs args, String wildcard, Annotation annotation);
     }
 
-    private static final Set<Class<? extends Annotation>> typeCheckAnnotations = Set.of(
+    private static final Set<Class<?>> typeCheckAnnotations = Set.of(
         BooleanTypeCheck.class,
         ByteTypeCheck.class,
         EnumMemberCheck.class,
         FloatTypeCheck.class,
         IntTypeCheck.class,
-        LongTypeCheck.class
+        LongTypeCheck.class,
+        EnumMemberChecks.class
     );
 
-    public static Map<Class<? extends Annotation>, TypeCheck> annotationToTypeCheck = new HashMap<>();
+    public static Map<Class<?>, TypeCheck> annotationToTypeCheck = new HashMap<>();
 
     static{
         annotationToTypeCheck.put(IntTypeCheck.class, (args, wildcard, annotation) -> {
@@ -105,31 +106,82 @@ public class TypeChecks {
         return value;
     }
 
-    public static List<CMDPair<String, TypeChecks.TypeCheck>> getTypeChecks(Annotation a) throws CMDCommandException{
-        boolean isOfType = false;
-        Class<?> clazzKey = null;
-        for(Class<?> c : typeCheckAnnotations){
-            isOfType |= c.isInstance(a);
-            if(c.isInstance(a)) clazzKey = c;
-        }
-        if(!isOfType) return null;
-        List<CMDPair<String, TypeChecks.TypeCheck>> result = new ArrayList<>();
-        try {
-            Method paramNames = a.getClass().getMethod("paramNames");
-            if(!paramNames.getReturnType().equals(String[].class)) return null;
-            String[] params = (String[]) paramNames.invoke(a);
-            for(String s : params){
-                TypeChecks.TypeCheck tc = annotationToTypeCheck.get(clazzKey);
-                if(tc == null) return null;
-                result.add(new CMDPair<String, TypeChecks.TypeCheck>(s, tc));
+    public static List<CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>>> getTypeChecks(Annotation a) throws CMDCommandException{
+        List<CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>>> result = new ArrayList<>();
+        
+        if(a instanceof IntTypeCheck itc){
+            for(String wc : itc.paramNames()){
+                CMDPair<Annotation, TypeChecks.TypeCheck> checkPair = 
+                new CMDPair<>(a, annotationToTypeCheck.get(itc.annotationType()));
+                CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>> resultPair = 
+                new CMDPair<>(wc, checkPair);
+                if(!resultPair.isNotNull() && !checkPair.isNotNull()) return new ArrayList<>();
+                result.add(resultPair);
             }
-        } catch (NoSuchMethodException | 
-        SecurityException | 
-        IllegalAccessException | 
-        IllegalArgumentException | 
-        InvocationTargetException e) {
-            throw new CMDCommandException("Could not process Annotation!");
         }
+        if(a instanceof BooleanTypeCheck itc){
+            for(String wc : itc.paramNames()){
+                CMDPair<Annotation, TypeChecks.TypeCheck> checkPair = 
+                new CMDPair<>(a, annotationToTypeCheck.get(itc.annotationType()));
+                CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>> resultPair = 
+                new CMDPair<>(wc, checkPair);
+                if(!resultPair.isNotNull() && !checkPair.isNotNull()) return new ArrayList<>();
+                result.add(resultPair);
+            }
+        }
+        if(a instanceof ByteTypeCheck itc){
+            for(String wc : itc.paramNames()){
+                CMDPair<Annotation, TypeChecks.TypeCheck> checkPair = 
+                new CMDPair<>(a, annotationToTypeCheck.get(itc.annotationType()));
+                CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>> resultPair = 
+                new CMDPair<>(wc, checkPair);
+                if(!resultPair.isNotNull() && !checkPair.isNotNull()) return new ArrayList<>();
+                result.add(resultPair);
+            }
+        }
+        if(a instanceof FloatTypeCheck itc){
+            for(String wc : itc.paramNames()){
+                CMDPair<Annotation, TypeChecks.TypeCheck> checkPair = 
+                new CMDPair<>(a, annotationToTypeCheck.get(itc.annotationType()));
+                CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>> resultPair = 
+                new CMDPair<>(wc, checkPair);
+                if(!resultPair.isNotNull() && !checkPair.isNotNull()) return new ArrayList<>();
+                result.add(resultPair);
+            }
+        }
+        if(a instanceof LongTypeCheck itc){
+            for(String wc : itc.paramNames()){
+                CMDPair<Annotation, TypeChecks.TypeCheck> checkPair = 
+                new CMDPair<>(a, annotationToTypeCheck.get(itc.annotationType()));
+                CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>> resultPair = 
+                new CMDPair<>(wc, checkPair);
+                if(!resultPair.isNotNull() && !checkPair.isNotNull()) return new ArrayList<>();
+                result.add(resultPair);
+            }
+        }
+        if(a instanceof EnumMemberCheck itc){
+            for(String wc : itc.paramNames()){
+                CMDPair<Annotation, TypeChecks.TypeCheck> checkPair = 
+                new CMDPair<>(a, annotationToTypeCheck.get(itc.annotationType()));
+                CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>> resultPair = 
+                new CMDPair<>(wc, checkPair);
+                if(!resultPair.isNotNull() && !checkPair.isNotNull()) return new ArrayList<>();
+                result.add(resultPair);
+            }
+        }
+        if(a instanceof EnumMemberChecks itc){
+            for(EnumMemberCheck emc : itc.value()){
+                for(String wc : emc.paramNames()){
+                    CMDPair<Annotation, TypeChecks.TypeCheck> checkPair = 
+                    new CMDPair<>(emc, annotationToTypeCheck.get(emc.annotationType()));
+                    CMDPair<String, CMDPair<Annotation, TypeChecks.TypeCheck>> resultPair = 
+                    new CMDPair<>(wc, checkPair);
+                    if(!resultPair.isNotNull() && !checkPair.isNotNull()) return new ArrayList<>();
+                    result.add(resultPair);
+                }
+            }
+        }
+
         return result;
     }
 }
