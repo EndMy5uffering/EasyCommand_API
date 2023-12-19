@@ -8,10 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bukkit.entity.Player;
+
 import com.endmysuffering.easycommands.annotations.CMDCommand;
 import com.endmysuffering.easycommands.typechecks.TypeChecks;
 
-public class CMDMethodCollection {
+public class CMDMethodCollector {
 
     interface CMDCallable{
         boolean call(CMDArgs args) throws CMDCommandException;
@@ -21,11 +23,11 @@ public class CMDMethodCollection {
 	private List<CMDPair<Annotation, ExecTest>> executionTests = new ArrayList<>();
     private Map<String, CMDPair<Annotation, TypeChecks.TypeCheck>> wildCardToTypeCheck = new HashMap<>();
 
-    public CMDMethodCollection(CMDFunction func){
-        this.callable = (args) -> func.func(args);
-    }
+	private PermissionCheck permissionCheck;
+	private MissingPermissionHandle missingPermissinHandle = null;
 
-    public CMDMethodCollection(CMDListener listener, Method m) throws CMDCommandException{
+
+    public CMDMethodCollector(CMDListener listener, Method m) throws CMDCommandException{
         Class<?>[] params = m.getParameterTypes();
         if(m.isAnnotationPresent(CMDCommand.class) && params.length == 1 && params[0] == CMDArgs.class){
             this.callable = (args) -> {
@@ -68,5 +70,29 @@ public class CMDMethodCollection {
     public boolean call(CMDArgs args) throws CMDCommandException {
         return callable.call(args);
     }
+
+    public boolean checkPermissions(Player p){
+		return hasPermissionCheck() ? this.permissionCheck.check(p) : true;
+	}
+
+    public boolean hasPermissionCheck() {
+		return this.permissionCheck != null;
+	}
+
+    public PermissionCheck getPermissionCheck() {
+		return permissionCheck;
+	}
+
+	public void setPermissionCheck(PermissionCheck permissionCheck) {
+		this.permissionCheck = permissionCheck;
+	}
+
+	public MissingPermissionHandle getMissingPermissinHandle() {
+		return missingPermissinHandle;
+	}
+
+	public void setMissingPermissinHandle(MissingPermissionHandle missingPermissinHandle) {
+		this.missingPermissinHandle = missingPermissinHandle;
+	}
 
 }

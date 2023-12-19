@@ -85,20 +85,9 @@ public class CMDManager implements TabExecutor{
 	private String preParseLabel(String label) {
 		return Pattern.matches(firstLabel, label) ? label : "/" + label;
 	}
-	
-	public boolean register(String cmd, CMDFunction func) {
-		String[] parts = preParse(cmd);
-		try {
-			rootsToCMDS.get(parts[0]).addCMD(parts, new CMDMethodCollection(func));
-		} catch (CMDCommandException e) {
-			if(this.plugin != null) plugin.getLogger().log(java.util.logging.Level.WARNING, e.getMessage());
-			return false;
-		}
-		return true;
-	}
 
 	public boolean register(CMDListener listener){
-		CMDMethodCollection cmdCollection = null;
+		CMDMethodCollector cmdCollection = null;
 		Method[] methods = listener.getClass().getMethods();
 
 		for(Method m : methods){
@@ -116,7 +105,7 @@ public class CMDManager implements TabExecutor{
 			}
 		
 			try {
-				cmdCollection = new CMDMethodCollection(listener, m);
+				cmdCollection = new CMDMethodCollector(listener, m);
 				cmdCollection.setGuardTests(ExecTestList);
 				rootsToCMDS.get(parts[0]).addCMD(parts, cmdCollection);
 			} catch (CMDCommandException e) {
@@ -232,23 +221,23 @@ public class CMDManager implements TabExecutor{
 			CMDNode struct = pair.getFirst();
 			Map<String, String> wildCards = pair.getSecound();
 			CMDArgs cmdArgs = new CMDArgs(sender, cmd, label, args, wildCards);
-			if(struct == null || struct.getFunc() == null) {
+			if(struct == null || struct.getMethodCollector() == null) {
 				sender.sendMessage(ChatColor.RED + "Command: " + ChatColor.AQUA + String.join(" ", tempArr) + ChatColor.RED + " not found!");
 				return true;
 			}
 
-			if(!struct.getFunc().executionTest(cmdArgs)) return true;
-			if(!struct.getFunc().doTypeChecks(cmdArgs)) {
+			if(!struct.getMethodCollector().executionTest(cmdArgs)) return true;
+			if(!struct.getMethodCollector().doTypeChecks(cmdArgs)) {
 				cmdArgs.sendError("Some of the provided arguments do not match the required type!");
 				return true;
 			}
 
 			if(sender instanceof Player player){
-				CMDNode faildStruct = root.checkPermission(tempArr, player);
-				if(faildStruct != null)
-					throw new MissingPermissionsException(player, faildStruct.getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
+				CMDNode faildNode = root.checkPermission(tempArr, player);
+				if(faildNode != null)
+					throw new MissingPermissionsException(player, faildNode.getMethodCollector().getMissingPermissinHandle(), ChatColor.RED + "Missing Permissions", label, args);
 			}
-			return struct.getFunc().call(cmdArgs);
+			return struct.getMethodCollector().call(cmdArgs);
 		} catch (CMDCommandException e) {
 			if(e.getErrorReason().equals(CMDCommandException.ErrorReason.COMMAND_NOT_FOUND)){
 				sender.sendMessage(ChatColor.RED + "Command: " + ChatColor.AQUA + String.join(" ", tempArr) + ChatColor.RED + " not found!");
@@ -273,7 +262,7 @@ public class CMDManager implements TabExecutor{
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		try {
-			return call(sender, cmd, label, args);
+			call(sender, cmd, label, args);
 		} catch (MissingPermissionsException e) {
 			if(e.getHandle() != null) {
 				e.getHandle().handleMissingPermission(e);

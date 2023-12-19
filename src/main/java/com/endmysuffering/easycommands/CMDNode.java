@@ -22,22 +22,20 @@ public class CMDNode {
 	
 	private final String part;
 	private final boolean isWildCard, isVarArg;
-	private CMDMethodCollection func;
+	private CMDMethodCollector methodCollector;
 	private Map<String, CMDNode> next = new HashMap<>();
 	private CMDTabLookup lookup;
-	private PermissionCheck permissionCheck;
-	private MissingPermissionHandle missingPermissinHandle = null;
 	private CMDNode nextWildCard = null;
 		
 	public CMDNode(String part) {
 		this(part, null);
 	}
 	
-	public CMDNode(String part, CMDMethodCollection func) {
+	public CMDNode(String part, CMDMethodCollector func) {
 		this.isWildCard = Pattern.matches(wildCardPattern, part);
 		this.isVarArg = Pattern.matches(varargPattern, part);
 		this.part = part;
-		this.func = func;
+		this.methodCollector = func;
 	}
 	
 	public CMDPair<CMDNode, Map<String, String>> search(String[] cmd) throws CMDCommandException {
@@ -145,9 +143,9 @@ public class CMDNode {
 	}
  
 
-	public void addCMD(String[] parts, CMDMethodCollection func) throws CMDCommandException {
+	public void addCMD(String[] parts, CMDMethodCollector func) throws CMDCommandException {
 		List<CMDNode> path = createPath(parts);
-		path.get(path.size()-1).setFunc(func);
+		path.get(path.size()-1).setMethodCollector(func);
 	}
 
 	public void addCMDLookup(String[] parts, CMDTabLookup tablookup) throws CMDCommandException {
@@ -158,16 +156,17 @@ public class CMDNode {
 	public void addPermissionCheck(String[] parts, PermissionCheck permissionCheck, MissingPermissionHandle handle) throws CMDCommandException {
 		List<CMDNode> path = createPath(parts);
 		CMDNode cstruct = path.get(path.size()-1);
-		cstruct.setPermissionCheck(permissionCheck);
-		cstruct.setMissingPermissinHandle(handle);
+		cstruct.getMethodCollector().setPermissionCheck(permissionCheck);
+		cstruct.getMethodCollector().setMissingPermissinHandle(handle);
 	}
 
 	public CMDNode checkPermission(String[] parts, Player p) throws CMDCommandException{
 		List<CMDNode> path = getPath(parts);
 		boolean hasPermission = true;
-		for(CMDNode s : path){
-			hasPermission &= s.checkPermission(p);
-			if(!hasPermission) return s;
+		for(CMDNode node : path){
+			if(!node.hasFunc()) continue;
+			hasPermission &= node.getMethodCollector().checkPermissions(p);
+			if(!hasPermission) return node;
 		}
 		return null;
 	}
@@ -180,7 +179,7 @@ public class CMDNode {
 
 	private void getCommands(List<String> list, String parentCMD){
 		String pref = parentCMD != "" ? parentCMD + " " : parentCMD;
-		if(this.func != null){
+		if(this.methodCollector != null){
 			list.add(pref + this.part);
 		}
 		for(String part: this.next.keySet()){
@@ -190,21 +189,13 @@ public class CMDNode {
 			this.nextWildCard.getCommands(list, pref + this.part);
 		}
 	}
-
-	private boolean checkPermission(Player p){
-		return hasPermissionCheck() ? this.permissionCheck.check(p) : true;
-	}
 	
 	public String getPart() {
 		return this.part;
 	}
 	
 	public boolean hasFunc() {
-		return func != null;
-	}
-	
-	public boolean hasPermissionCheck() {
-		return this.permissionCheck != null;
+		return methodCollector != null;
 	}
 	
 	public boolean hasNext(String part) {
@@ -215,24 +206,8 @@ public class CMDNode {
 		return next.get(part);
 	}
 	
-	public CMDMethodCollection getFunc() {
-		return this.func;
-	}
-
-	public PermissionCheck getPermissionCheck() {
-		return permissionCheck;
-	}
-
-	public void setPermissionCheck(PermissionCheck permissionCheck) {
-		this.permissionCheck = permissionCheck;
-	}
-
-	public MissingPermissionHandle getMissingPermissinHandle() {
-		return missingPermissinHandle;
-	}
-
-	public void setMissingPermissinHandle(MissingPermissionHandle missingPermissinHandle) {
-		this.missingPermissinHandle = missingPermissinHandle;
+	public CMDMethodCollector getMethodCollector() {
+		return this.methodCollector;
 	}
 
 	public CMDNode getNextWildCard() {
@@ -243,8 +218,8 @@ public class CMDNode {
 		this.nextWildCard = nextWildCard;
 	}
 
-	private void setFunc(CMDMethodCollection func) {
-		this.func = func;
+	private void setMethodCollector(CMDMethodCollector func) {
+		this.methodCollector = func;
 	}
 
 	private void setLookup(CMDTabLookup lookup) {

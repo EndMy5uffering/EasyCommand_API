@@ -50,6 +50,15 @@ public class CmdAnnotationTests {
         assertTrue("Boolean value was false expected true", !b2);
     }
 
+    public static void main(String ... args){
+        
+        CMDManager manager = new CMDManager();
+        TestPlayer player = new TestPlayer();
+        manager.register(new AnnotationCommands());
+
+        TestUtils.makeCall(manager, player, "/cmd1 true");
+    }
+
     @Test
     public void TestTypeCheckByte(){
         CMDManager manager = new CMDManager();
